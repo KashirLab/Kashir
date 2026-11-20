@@ -30,7 +30,7 @@ class IntentLauncherModule(private val reactContext: ReactApplicationContext) :
     }
 
     override fun onActivityResult(
-        activity: Activity?,
+        activity: Activity,
         requestCode: Int,
         resultCode: Int,
         data: Intent?
@@ -94,7 +94,7 @@ class IntentLauncherModule(private val reactContext: ReactApplicationContext) :
         return extraMap
     }
 
-    override fun onNewIntent(intent: Intent?) {
+    override fun onNewIntent(intent: Intent) {
         // Not used for this implementation
     }
     
@@ -121,7 +121,7 @@ class IntentLauncherModule(private val reactContext: ReactApplicationContext) :
                 addExtrasToIntent(this, options)
             }
             
-            val currentActivity = currentActivity
+            val currentActivity = reactContext.currentActivity
             if (currentActivity != null) {
                 val requestCode = nextRequestCode.getAndIncrement()
                 pendingPromises[requestCode] = promise

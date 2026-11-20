@@ -376,7 +376,7 @@ const styles = StyleSheet.create({
     fontSize: 18,
   },
   swapInProgressOverlay: {
-    ...StyleSheet.absoluteFillObject,
+    ...StyleSheet.absoluteFill,
     backgroundColor: 'rgba(0, 0, 0, 0.95)', // Increased opacity to fully block background
     justifyContent: 'center',
     alignItems: 'center',

@@ -381,7 +381,7 @@ export default function App() {
       <SafeAreaProvider>
         <RootStack.Navigator
           id={undefined}
-          screenOptions={{ headerShown: false }}
+          screenOptions={{ headerShown: false, statusBarStyle: 'light' }}
         >
           <RootStack.Screen name="MainApp">
             {({ navigation }) => (

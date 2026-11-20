@@ -24,7 +24,7 @@ export function ZapAmountModal({
   onSubmit,
 }: ZapAmountModalProps) {
   const [amountInput, setAmountInput] = useState('');
-  const inputRef = useRef<TextInput>(null);
+  const inputRef = useRef<React.ComponentRef<typeof TextInput>>(null);
 
   // Set the initial value when modal opens and focus the input
   useEffect(() => {

@@ -39,7 +39,7 @@
   ],
   "scripts": {
     "ubrn:ios:nostr": "ubrn build ios --config ubrn.nostr.config.yaml --and-generate",
-    "ubrn:ios:cdk": "./scripts/patch-cdk-uniffi.sh && IPHONEOS_DEPLOYMENT_TARGET=18.0 ubrn build ios --config ubrn.cdk.config.yaml --and-generate",
+    "ubrn:ios:cdk": "./scripts/patch-cdk-uniffi.sh && ubrn build ios --config ubrn.cdk.config.yaml --and-generate",
     "ubrn:ios": "yarn ubrn:ios:nostr && yarn ubrn:ios:cdk && ./scripts/fix-cpp-bindings.sh && ./scripts/patch-exports.sh && (cd example/ios && pod install)",
     "ubrn:android": "./scripts/patch-cdk-uniffi.sh && ./scripts/build-android.sh && ./scripts/patch-exports.sh",
     "ubrn:clean": "rm -Rf cpp/ android/src/main/java ios/ src/Native* src/generated/ src/index.ts* NostrSdkFramework.xcframework CdkFramework.xcframework",
@@ -48,7 +48,8 @@
     "typecheck": "tsc",
     "lint": "eslint \"**/*.{js,ts,tsx}\"",
     "clean": "del-cli android/build example/android/build example/android/app/build example/ios/build lib",
-    "prepare": "bob build",
+    "codegen": "bob build --target codegen && del-cli ios/generated && react-native codegen --platform ios --source library",
+    "prepare": "yarn codegen && bob build",
     "release": "release-it"
   },
   "keywords": [
@@ -72,18 +73,18 @@
     "@eslint/compat": "^1.2.7",
     "@eslint/eslintrc": "^3.3.0",
     "@eslint/js": "^9.22.0",
-    "@react-native-community/cli": "20.0.1",
-    "@react-native/eslint-config": "^0.78.0",
+    "@react-native-community/cli": "21.0.0",
+    "@react-native/eslint-config": "0.88.1",
     "@types/jest": "^29.5.5",
-    "@types/react": "^19.0.0",
+    "@types/react": "^19.2.0",
     "del-cli": "^5.1.0",
     "eslint": "^9.22.0",
     "eslint-config-prettier": "^10.1.1",
     "eslint-plugin-prettier": "^5.2.3",
     "jest": "^29.7.0",
     "prettier": "^3.0.3",
-    "react": "19.0.0",
-    "react-native": "0.78.1",
+    "react": "19.3.0",
+    "react-native": "0.88.1",
     "react-native-builder-bob": "^0.38.3",
     "release-it": "^17.10.0",
     "turbo": "^1.10.7",
@@ -93,17 +94,11 @@
     "react": "*",
     "react-native": "*"
   },
-  "resolutions": {
-    "@typescript-eslint/eslint-plugin": "8.39.0",
-    "@typescript-eslint/parser": "8.39.0",
-    "@typescript-eslint/typescript-estree": "8.39.0"
-  },
   "workspaces": [
     "example"
   ],
   "packageManager": "yarn@3.6.1",
   "jest": {
-    "preset": "react-native",
     "modulePathIgnorePatterns": [
       "<rootDir>/example/node_modules",
       "<rootDir>/lib/"
@@ -144,7 +139,6 @@
     "source": "src",
     "output": "lib",
     "targets": [
-      "codegen",
       [
         "module",
         {

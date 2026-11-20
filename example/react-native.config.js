@@ -4,7 +4,8 @@ const pkg = require('../package.json');
 module.exports = {
   project: {
     ios: {
-      automaticPodsInstallation: true,
+      // The binding build installs CocoaPods after both frameworks are available.
+      automaticPodsInstallation: false,
     },
   },
   dependencies: {

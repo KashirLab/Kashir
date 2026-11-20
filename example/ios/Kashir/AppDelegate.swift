@@ -4,20 +4,46 @@ import React_RCTAppDelegate
 import ReactAppDependencyProvider
 
 @main
-class AppDelegate: RCTAppDelegate {
-  override func application(_ application: UIApplication, didFinishLaunchingWithOptions launchOptions: [UIApplication.LaunchOptionsKey : Any]? = nil) -> Bool {
-    self.moduleName = "Kashir"
-    self.dependencyProvider = RCTAppDependencyProvider()
+final class AppDelegate: UIResponder, UIApplicationDelegate {}
 
-    // You can add your custom initial props in the dictionary below.
-    // They will be passed down to the ViewController used by React Native.
-    self.initialProps = [:]
+@objc(KashirSceneDelegate)
+final class KashirSceneDelegate: RCTDefaultReactNativeFactoryDelegate, UIWindowSceneDelegate {
+  var window: UIWindow?
+  private var reactNativeFactory: RCTReactNativeFactory?
 
-    return super.application(application, didFinishLaunchingWithOptions: launchOptions)
+  func scene(
+    _ scene: UIScene,
+    willConnectTo session: UISceneSession,
+    options connectionOptions: UIScene.ConnectionOptions
+  ) {
+    guard let windowScene = scene as? UIWindowScene else { return }
+
+    dependencyProvider = RCTAppDependencyProvider()
+    let factory = RCTReactNativeFactory(delegate: self)
+    reactNativeFactory = factory
+
+#if DEBUG
+    factory.devMenuConfiguration = RCTDevMenuConfiguration(
+      devMenuEnabled: true,
+      shakeGestureEnabled: true,
+      keyboardShortcutsEnabled: true
+    )
+#endif
+
+    window = UIWindow(windowScene: windowScene)
+    factory.startReactNative(
+      withModuleName: "Kashir",
+      in: window,
+      connectionOptions: connectionOptions
+    )
   }
 
-  override func sourceURL(for bridge: RCTBridge) -> URL? {
-    self.bundleURL()
+  func scene(_ scene: UIScene, openURLContexts urlContexts: Set<UIOpenURLContext>) {
+    RCTLinkingManager.scene(scene, openURLContexts: urlContexts)
+  }
+
+  func scene(_ scene: UIScene, continue userActivity: NSUserActivity) {
+    RCTLinkingManager.scene(scene, continue: userActivity)
   }
 
   override func bundleURL() -> URL? {

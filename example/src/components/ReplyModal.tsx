@@ -34,7 +34,7 @@ export function ReplyModal({
 }: ReplyModalProps) {
   const [replyContent, setReplyContent] = useState('');
   const [isPosting, setIsPosting] = useState(false);
-  const textInputRef = useRef<TextInput>(null);
+  const textInputRef = useRef<React.ComponentRef<typeof TextInput>>(null);
 
   // Focus the text input when the modal becomes visible
   useEffect(() => {
