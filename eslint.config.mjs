@@ -33,9 +33,20 @@ export default defineConfig([
     },
   },
   {
-    ignores: [
-      'node_modules/',
-      'lib/'
-    ],
+    files: ['eslint.config.mjs'],
+    languageOptions: {
+      ecmaVersion: 'latest',
+      sourceType: 'module',
+    },
+  },
+  {
+    files: ['scripts/**/*.cjs'],
+    languageOptions: {
+      ecmaVersion: 'latest',
+      sourceType: 'commonjs',
+    },
+  },
+  {
+    ignores: ['node_modules/', 'lib/'],
   },
 ]);

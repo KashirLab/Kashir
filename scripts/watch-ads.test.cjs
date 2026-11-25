@@ -1,4 +1,5 @@
 const assert = require('node:assert/strict');
+const { Buffer } = require('node:buffer');
 const fs = require('node:fs');
 const { createRequire } = require('node:module');
 const path = require('node:path');
