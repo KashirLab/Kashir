@@ -45,20 +45,6 @@ const localCodegenDir = '${project.buildDir}/generated/source/codegen/java';
 if (gradleSource.includes(localCodegenDir)) {
   writeFileSync(gradlePath, gradleSource.replace(localCodegenDir, 'generated/java'));
 }
-
-// Let fbjni retrieve the CallInvokerHolder for both React Native holder layouts.
-const adapterPath = 'android/cpp-adapter.cpp';
-const source = readFileSync(adapterPath, 'utf8');
-const legacyLookup = /    \/\/ https:\/\/github\.com\/realm\/realm-js\/[^\n]*\n[\s\S]*?\n    auto jsCallInvoker = nativePointer->getCallInvoker\(\);/;
-const holderLookup = `    auto holder = facebook::jni::static_ref_cast<react::CallInvokerHolder::javaobject>(
-        facebook::jni::wrap_alias(callInvokerHolderJavaObj));
-    auto jsCallInvoker = holder->cthis()->getCallInvoker();`;
-
-if (legacyLookup.test(source)) {
-  writeFileSync(adapterPath, source.replace(legacyLookup, holderLookup));
-} else if (!source.includes(holderLookup)) {
-  throw new Error(`Could not find the generated CallInvokerHolder lookup in ${adapterPath}`);
-}
 NODE
 
 yarn codegen
