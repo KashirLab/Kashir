@@ -350,7 +350,6 @@ export function useWallet() {
 
       // Create/restore MultiMintWallet
       const wallet = await createMultiMintWallet(mnemonic);
-      walletManager.setMultiMintWallet(wallet);
 
       // Load saved mint URLs
       await loadMintUrlsFromStorage();
@@ -378,6 +377,7 @@ export function useWallet() {
         setCurrentMintUrlRef(currentMintUrls[0]);
       }
 
+      walletManager.setMultiMintWallet(wallet);
       // Update balance
       await updateBalance();
 
@@ -490,13 +490,14 @@ export function useWallet() {
       }
 
       // Store seed phrase securely
-      await SecureStorageService.storeSeedPhrase(mnemonic);
+      if (!(await SecureStorageService.storeSeedPhrase(mnemonic))) {
+        throw new Error('Could not save the seed phrase to secure storage');
+      }
 
       // Create MultiMintWallet
       console.log('Creating MultiMintWallet...');
       const wallet = await createMultiMintWallet(mnemonic);
       console.log('MultiMintWallet created successfully');
-      walletManager.setMultiMintWallet(wallet);
 
       // Add all mints from pending creation
       for (const mintUrl of pendingMintUrls) {
@@ -513,6 +514,7 @@ export function useWallet() {
         setCurrentMintUrlRef(pendingMintUrls[0]);
       }
 
+      walletManager.setMultiMintWallet(wallet);
       // Update balance
       await updateBalance();
 

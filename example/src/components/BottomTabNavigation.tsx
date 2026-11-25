@@ -11,11 +11,13 @@ export type MainTabType = (typeof tabs)[number]['id'];
 
 interface BottomTabNavigationProps {
   activeTab: MainTabType;
+  showWatchAds: boolean;
   onTabChange: (tab: MainTabType) => void;
 }
 
 export function BottomTabNavigation({
   activeTab,
+  showWatchAds,
   onTabChange,
 }: BottomTabNavigationProps) {
   const insets = useSafeAreaInsets();
@@ -23,6 +25,7 @@ export function BottomTabNavigation({
   return (
     <View style={[styles.tabContainer, { paddingBottom: insets.bottom }]}>
       {tabs.map(({ id, label }) => {
+        if (id === 'watchAds' && !showWatchAds) return null;
         const selected = activeTab === id;
         return (
           <TouchableOpacity

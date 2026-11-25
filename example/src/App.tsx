@@ -10,15 +10,24 @@ import { resumePendingAdWithdrawals } from './services/AdWithdrawalService';
 import { walletManager } from './services/WalletManager';
 
 export default function App() {
-  const [activeTab, setActiveTab] = useState<MainTabType>('wallet');
+  const [selectedTab, setSelectedTab] = useState<MainTabType>('wallet');
+  const [hasWallet, setHasWallet] = useState(() => walletManager.hasWallet());
+  const activeTab =
+    selectedTab === 'watchAds' && !hasWallet ? 'wallet' : selectedTab;
   const settingsVisible = activeTab === 'settings';
 
   useEffect(() => {
-    const resumeWithdrawals = () => {
-      resumePendingAdWithdrawals();
+    const updateWallet = () => {
+      const ready = walletManager.hasWallet();
+      setHasWallet(ready);
+      if (ready) {
+        resumePendingAdWithdrawals();
+      } else {
+        setSelectedTab((tab) => (tab === 'watchAds' ? 'wallet' : tab));
+      }
     };
-    const unsubscribe = walletManager.subscribe(resumeWithdrawals);
-    resumeWithdrawals();
+    const unsubscribe = walletManager.subscribe(updateWallet);
+    updateWallet();
     return unsubscribe;
   }, []);
 
@@ -34,7 +43,11 @@ export default function App() {
       <View style={[styles.screen, !settingsVisible && styles.hiddenScreen]}>
         <SettingsScreen isVisible={settingsVisible} />
       </View>
-      <BottomTabNavigation activeTab={activeTab} onTabChange={setActiveTab} />
+      <BottomTabNavigation
+        activeTab={activeTab}
+        showWatchAds={hasWallet}
+        onTabChange={setSelectedTab}
+      />
     </SafeAreaProvider>
   );
 }
