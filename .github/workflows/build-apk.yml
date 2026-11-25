@@ -207,15 +207,35 @@ jobs:
           cd android
           ./gradlew assembleRelease --stacktrace
 
-      - name: Read release version
+      - name: Generate tag name from version
         run: |
-          VERSION_NAME=$(sed -nE 's/^[[:space:]]*versionName "([0-9]+\.[0-9]+\.[0-9]+)"[[:space:]]*$/\1/p' example/android/app/build.gradle)
-          if [[ ! "$VERSION_NAME" =~ ^[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
-            echo "Could not read a release version from Android build.gradle"
-            exit 1
+          # Generate tag name using version from build.gradle
+          cd example/android/app
+          VERSION_NAME=$(grep 'versionName' build.gradle | sed 's/.*versionName "\(.*\)".*/\1/')
+          VERSION_CODE=${{ github.run_number }}
+
+          # Use different format for pre-releases (automatic) vs formal releases (manual)
+          if [ "${{ github.event_name }}" != "workflow_dispatch" ]; then
+            # Pre-release (automatic): include build number
+            RELEASE_TITLE="${VERSION_NAME}(${VERSION_CODE})"
+            APK_NAME="${VERSION_NAME}-${VERSION_CODE}"
+            TAG_NAME="latest"
+            echo "Creating pre-release with tag: latest, title: $RELEASE_TITLE"
+          else
+            # Formal release (manual): exclude build number
+            RELEASE_TITLE="v${VERSION_NAME}"
+            APK_NAME="v${VERSION_NAME}"
+            TAG_NAME="v${VERSION_NAME}"
+            echo "Creating formal release with tag: $TAG_NAME"
           fi
-          echo "TAG_NAME=v$VERSION_NAME" >> "$GITHUB_ENV"
-          echo "RELEASE_COMMIT=$(git rev-parse HEAD)" >> "$GITHUB_ENV"
+
+          echo "Generated tag name: $TAG_NAME"
+          echo "Generated release title: $RELEASE_TITLE"
+          echo "Generated APK name: $APK_NAME"
+          echo "TAG_NAME=$TAG_NAME" >> $GITHUB_ENV
+          echo "RELEASE_TITLE=$RELEASE_TITLE" >> $GITHUB_ENV
+          echo "APK_NAME=$APK_NAME" >> $GITHUB_ENV
+          echo "APK will be named: $APK_NAME.apk"
 
       - name: Find and copy APK
         run: |
@@ -229,8 +249,10 @@ jobs:
           
           if [ -n "$APK_PATH" ]; then
             echo "Found APK at: $APK_PATH"
-            APK_FILENAME="${TAG_NAME}.apk"
+            # Create APK filename using tag name or fallback version
+            APK_FILENAME="${APK_NAME}.apk"
             echo "APK filename will be: $APK_FILENAME"
+            echo "APK_NAME: $APK_NAME"
             # Copy the APK to root directory with tag-based name
             cp "$APK_PATH" "$APK_FILENAME"
             echo "APK copied to $APK_FILENAME"
@@ -252,25 +274,40 @@ jobs:
             exit 1
           fi
 
-      - name: Check for an existing versioned release
-        id: release
-        env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      - name: Delete existing releases and tags
         run: |
-          if gh release view "$TAG_NAME" --repo "$GITHUB_REPOSITORY" >/dev/null 2>&1; then
-            echo "Release $TAG_NAME already exists"
-            echo "exists=true" >> "$GITHUB_OUTPUT"
+          if [ "${{ github.event_name }}" != "workflow_dispatch" ]; then
+            # For pre-releases, only delete the existing "latest" release/tag
+            echo "Deleting existing 'latest' release and tag for pre-release update..."
+
+            # Delete latest release if it exists
+            if gh release view latest >/dev/null 2>&1; then
+              echo "Deleting 'latest' release"
+              gh release delete latest --yes || echo "Failed to delete 'latest' release"
+            fi
+
+            # Delete latest tag if it exists
+            if git tag -l | grep -q "^latest$"; then
+              echo "Deleting 'latest' tag"
+              git push --delete origin latest || echo "Failed to delete remote 'latest' tag"
+              git tag -d latest || echo "Failed to delete local 'latest' tag"
+            fi
+
+            echo "Pre-release cleanup completed."
+          else
+            # For formal releases, keep existing tags and releases
+            echo "Creating formal release (keeping existing tags and releases)..."
           fi
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Create Release
-        if: steps.release.outputs.exists != 'true'
         uses: ncipollo/release-action@v1
         with:
           tag: ${{ env.TAG_NAME }}
-          name: ${{ env.TAG_NAME }}
-          commit: ${{ env.RELEASE_COMMIT }}
+          name: ${{ env.RELEASE_TITLE }}
           artifacts: "${{ env.APK_FILE }}"
           makeLatest: true
-          skipIfReleaseExists: true
+          prerelease: ${{ github.event_name != 'workflow_dispatch' }}
           draft: ${{ github.event_name == 'workflow_dispatch' }}
           token: ${{ secrets.GITHUB_TOKEN }}
