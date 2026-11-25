@@ -1,6 +1,7 @@
 {
   "manifest_version": 3,
   "name": "Kashir",
+  "description": "Kashir Safari extension.",
   "version": "1.0.0",
   "icons": { "512": "icon-512.png" },
   "permissions": ["nativeMessaging"],
