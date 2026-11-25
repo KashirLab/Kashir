@@ -34,6 +34,7 @@ export function WatchAdsScreen() {
         <WebView
           style={styles.webView}
           source={{ uri: WATCH_ADS_URL }}
+          originWhitelist={['http://*', 'https://*', 'about:srcdoc']}
           domStorageEnabled
           allowsInlineMediaPlayback
           startInLoadingState
