@@ -15,9 +15,13 @@ import { MintsList, MintUrlModal, SwapModal, useWallet } from './wallet';
 
 interface SettingsScreenProps {
   isVisible: boolean;
+  onResetWallet: () => Promise<void>;
 }
 
-export function SettingsScreen({ isVisible }: SettingsScreenProps) {
+export function SettingsScreen({
+  isVisible,
+  onResetWallet,
+}: SettingsScreenProps) {
   const [hasSeedPhrase, setHasSeedPhrase] = useState(false);
   const [showSwapModal, setShowSwapModal] = useState(false);
   const [mintsRefreshToken, setMintsRefreshToken] = useState(0);
@@ -26,6 +30,8 @@ export function SettingsScreen({ isVisible }: SettingsScreenProps) {
     multiMintWallet,
     mintUrls,
     activeMintUrl,
+    isInitializing,
+    isLoadingWallet,
     showMintUrlModal,
     promptForMintUrl,
     handleMintUrlSubmit,
@@ -77,7 +83,7 @@ export function SettingsScreen({ isVisible }: SettingsScreenProps) {
   const handleRemoveSeedPhrase = () => {
     Alert.alert(
       'Remove Seed Phrase',
-      'Are you sure you want to remove the stored seed phrase? You should have it backed up elsewhere.',
+      'This deletes the seed phrase, wallet funds stored on this device, mint settings, and ad withdrawal history. Make sure you have a backup before continuing.',
       [
         { text: 'Cancel', style: 'cancel' },
         {
@@ -85,18 +91,9 @@ export function SettingsScreen({ isVisible }: SettingsScreenProps) {
           style: 'destructive',
           onPress: async () => {
             try {
-              const removed = await SecureStorageService.removeSeedPhrase();
-              if (removed) {
-                setHasSeedPhrase(false);
-                Alert.alert(
-                  'Success',
-                  'Seed phrase removed from secure storage'
-                );
-              } else {
-                Alert.alert('Error', 'Failed to remove seed phrase');
-              }
+              await onResetWallet();
             } catch {
-              Alert.alert('Error', 'Failed to remove seed phrase');
+              Alert.alert('Reset Failed', 'Tap Remove Seed Phrase to retry.');
             }
           },
         },
@@ -138,6 +135,7 @@ export function SettingsScreen({ isVisible }: SettingsScreenProps) {
               </TouchableOpacity>
               <TouchableOpacity
                 style={styles.settingButton}
+                disabled={isInitializing || isLoadingWallet}
                 onPress={handleRemoveSeedPhrase}
               >
                 <Text style={[styles.settingButtonText, styles.dangerText]}>

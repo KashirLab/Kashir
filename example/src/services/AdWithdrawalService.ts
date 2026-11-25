@@ -191,6 +191,9 @@ async function processWithdrawal(key: string, url?: URL): Promise<bigint> {
 }
 
 function runWithdrawal(key: string, url?: URL): Promise<bigint> {
+  if (!walletManager.hasWallet()) {
+    return Promise.reject(new Error('Wallet is unavailable'));
+  }
   const active = activeWithdrawals.get(key);
   if (active) return active;
   const operation = processWithdrawal(key, url);
@@ -198,6 +201,10 @@ function runWithdrawal(key: string, url?: URL): Promise<bigint> {
   const cleanup = () => activeWithdrawals.delete(key);
   operation.then(cleanup, cleanup);
   return operation;
+}
+
+export async function waitForAdWithdrawals(): Promise<void> {
+  await Promise.allSettled(activeWithdrawals.values());
 }
 
 export async function withdrawAdReward(lnurl: string): Promise<bigint> {

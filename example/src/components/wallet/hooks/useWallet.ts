@@ -21,10 +21,10 @@ import { getErrorMessage } from '../utils/errorUtils';
 import { formatSats } from '../utils/formatUtils';
 import { SecureStorageService } from '../../../services/SecureStorageService';
 import { walletManager } from '../../../services/WalletManager';
+import { walletDatabasePath } from '../../../services/WalletStorage';
 
 const MINT_URLS_STORAGE_KEY = '@cashu_mint_urls';
 const ACTIVE_MINT_URL_STORAGE_KEY = '@cashu_active_mint_url';
-const MULTIMINT_WALLET_DB_PATH = `${RNFS.DocumentDirectoryPath}/cdk_multimint_wallet.db`;
 
 export function useWallet() {
   // Get wallet data from WalletManager
@@ -313,7 +313,7 @@ export function useWallet() {
   const createMultiMintWallet = useCallback(
     async (mnemonic: string): Promise<WalletRepositoryInterface> => {
       try {
-        const store = sqliteWalletStore(MULTIMINT_WALLET_DB_PATH);
+        const store = sqliteWalletStore(walletDatabasePath);
         const wallet = new WalletRepository(mnemonic, store);
 
         console.log('Created WalletRepository with shared database');
@@ -329,7 +329,7 @@ export function useWallet() {
   const checkWalletExists = async (): Promise<boolean> => {
     try {
       // Check if shared wallet database exists
-      const dbExists = await RNFS.exists(MULTIMINT_WALLET_DB_PATH);
+      const dbExists = await RNFS.exists(walletDatabasePath);
       return dbExists;
     } catch (error) {
       console.error('Failed to check wallet existence:', error);
