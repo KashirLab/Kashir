@@ -1,8 +1,10 @@
 (() => {
+  if (window.__kashirSafariWatchAdsObserver) return;
+
   const advancedButtons = new WeakSet();
   const initializedPayouts = new WeakSet();
   const attemptedRewards = new Set();
-  let activeRedemptions = 0;
+  let redeemingReward = false;
 
   function selectLnurlTab() {
     const payout = document.querySelector('#payout');
@@ -45,14 +47,14 @@
 
     const completed = document.querySelector('.actions #view-complete');
     const button = completed?.parentElement?.querySelector('button#next-view');
-    if (clickNextAd(button, 'もっと見る') || activeRedemptions > 0) return;
+    if (clickNextAd(button, 'もっと見る') || redeemingReward) return;
     Array.from(
       document.querySelectorAll('#payout button.primary, #payout a[href="/"]')
     ).some((control) => clickNextAd(control, '次の広告を見る'));
   }
 
   async function redeemReward() {
-    if (document.visibilityState !== 'visible') return;
+    if (redeemingReward || document.visibilityState !== 'visible') return;
     const payout = document.querySelector('#payout');
     if (!payout || !initializedPayouts.has(payout)) return;
 
@@ -65,12 +67,16 @@
     const lnurl = match[1].toLowerCase();
     if (attemptedRewards.has(lnurl)) return;
     attemptedRewards.add(lnurl);
-    activeRedemptions += 1;
+    redeemingReward = true;
 
-    const status = document.createElement('p');
-    status.setAttribute('role', 'status');
+    let status = payout.querySelector('[data-kashir-redemption-status]');
+    if (!status) {
+      status = document.createElement('p');
+      status.setAttribute('data-kashir-redemption-status', '');
+      status.setAttribute('role', 'status');
+      payout.append(status);
+    }
     status.textContent = 'Redeeming ad reward…';
-    payout.append(status);
 
     try {
       for (let attempt = 0; attempt < 3; attempt++) {
@@ -93,18 +99,19 @@
       status.textContent =
         'Could not redeem the ad reward. Reload the page to retry.';
     } finally {
-      activeRedemptions -= 1;
+      redeemingReward = false;
       advanceCompletedAd();
     }
   }
 
   function updatePage() {
     selectLnurlTab();
-    void redeemReward();
+    redeemReward();
     advanceCompletedAd();
   }
 
-  new MutationObserver(updatePage).observe(document.documentElement, {
+  window.__kashirSafariWatchAdsObserver = new MutationObserver(updatePage);
+  window.__kashirSafariWatchAdsObserver.observe(document.documentElement, {
     childList: true,
     subtree: true,
     characterData: true,

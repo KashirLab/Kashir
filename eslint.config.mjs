@@ -47,6 +47,16 @@ export default defineConfig([
     },
   },
   {
+    files: ['safari-extension/**/*.js'],
+    languageOptions: {
+      globals: {
+        browser: 'readonly',
+        getComputedStyle: 'readonly',
+        MutationObserver: 'readonly',
+      },
+    },
+  },
+  {
     ignores: ['node_modules/', 'lib/'],
   },
 ]);
