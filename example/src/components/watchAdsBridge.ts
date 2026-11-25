@@ -28,15 +28,22 @@ export const WATCH_ADS_SCRIPT = `
     previous = lnurl;
     window.ReactNativeWebView.postMessage(JSON.stringify({ type: ${JSON.stringify(MESSAGE_TYPE)}, lnurl: lnurl }));
   }
+  function clickNextAd(button, label) {
+    if (!button || button.disabled || button.getAttribute('aria-disabled') === 'true') return false;
+    if (button.textContent.trim() !== label || !button.getClientRects().length) return false;
+    if (getComputedStyle(button).visibility !== 'visible' || advancedButtons.has(button)) return false;
+    advancedButtons.add(button);
+    button.click();
+    return true;
+  }
   function advanceCompletedAd() {
     if (document.visibilityState !== 'visible' || !document.hasFocus()) return;
     var completed = document.querySelector('.actions #view-complete');
     var button = completed && completed.parentElement.querySelector('button#next-view');
-    if (!button || button.disabled || button.getAttribute('aria-disabled') === 'true') return;
-    if (button.textContent.trim() !== 'もっと見る' || !button.getClientRects().length) return;
-    if (getComputedStyle(button).visibility !== 'visible' || advancedButtons.has(button)) return;
-    advancedButtons.add(button);
-    button.click();
+    if (clickNextAd(button, 'もっと見る')) return;
+    Array.from(document.querySelectorAll('#payout button.primary, #payout a[href="/"]')).some(function (control) {
+      return clickNextAd(control, '次の広告を見る');
+    });
   }
   function updatePage() {
     selectLnurlTab();

@@ -2,6 +2,7 @@
   const advancedButtons = new WeakSet();
   const initializedPayouts = new WeakSet();
   const attemptedRewards = new Set();
+  let activeRedemptions = 0;
 
   function selectLnurlTab() {
     const payout = document.querySelector('#payout');
@@ -21,25 +22,33 @@
     if (tab.getAttribute('aria-selected') !== 'true') tab.click();
   }
 
+  function clickNextAd(button, label) {
+    if (
+      !button ||
+      button.disabled ||
+      button.getAttribute('aria-disabled') === 'true' ||
+      button.textContent.trim() !== label ||
+      !button.getClientRects().length ||
+      getComputedStyle(button).visibility !== 'visible' ||
+      advancedButtons.has(button)
+    ) {
+      return false;
+    }
+
+    advancedButtons.add(button);
+    button.click();
+    return true;
+  }
+
   function advanceCompletedAd() {
     if (document.visibilityState !== 'visible' || !document.hasFocus()) return;
 
     const completed = document.querySelector('.actions #view-complete');
     const button = completed?.parentElement?.querySelector('button#next-view');
-    if (
-      !button ||
-      button.disabled ||
-      button.getAttribute('aria-disabled') === 'true' ||
-      button.textContent.trim() !== 'もっと見る' ||
-      !button.getClientRects().length ||
-      getComputedStyle(button).visibility !== 'visible' ||
-      advancedButtons.has(button)
-    ) {
-      return;
-    }
-
-    advancedButtons.add(button);
-    button.click();
+    if (clickNextAd(button, 'もっと見る') || activeRedemptions > 0) return;
+    Array.from(
+      document.querySelectorAll('#payout button.primary, #payout a[href="/"]')
+    ).some((control) => clickNextAd(control, '次の広告を見る'));
   }
 
   async function redeemReward() {
@@ -56,6 +65,7 @@
     const lnurl = match[1].toLowerCase();
     if (attemptedRewards.has(lnurl)) return;
     attemptedRewards.add(lnurl);
+    activeRedemptions += 1;
 
     const status = document.createElement('p');
     status.setAttribute('role', 'status');
@@ -82,6 +92,9 @@
     } catch {
       status.textContent =
         'Could not redeem the ad reward. Reload the page to retry.';
+    } finally {
+      activeRedemptions -= 1;
+      advanceCompletedAd();
     }
   }
 

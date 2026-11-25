@@ -183,6 +183,7 @@ test('the page bridge reports visible LNURLs, changes, and removal without initi
   const context = vm.createContext({
     window,
     document: {
+      querySelectorAll: () => [],
       documentElement: {},
       addEventListener() {},
       querySelector: (selector) =>
@@ -215,6 +216,7 @@ function createAdPageHarness() {
   const state = {
     completed: false,
     payout: null,
+    payoutControls: [],
     focused: true,
     visible: true,
     button: null,
@@ -239,6 +241,10 @@ function createAdPageHarness() {
         return state.visible ? 'visible' : 'hidden';
       },
       hasFocus: () => state.focused,
+      querySelectorAll: (selector) =>
+        selector === '#payout button.primary, #payout a[href="/"]'
+          ? state.payoutControls
+          : [],
       querySelector: (selector) =>
         selector === '#payout'
           ? state.payout
@@ -350,6 +356,21 @@ test('completed ads only advance while the page is visible and focused', () => {
   assert.equal(h.state.clicks, 0);
   h.state.focused = true;
   h.listeners.focus();
+  assert.equal(h.state.clicks, 1);
+});
+
+test('advances once from the completed payout screen', () => {
+  const h = createAdPageHarness();
+  const nextAd = h.nextButton();
+  nextAd.textContent = '次の広告を見る';
+  nextAd.disabled = true;
+  h.state.payoutControls = [nextAd];
+  h.notify();
+  assert.equal(h.state.clicks, 0);
+
+  nextAd.disabled = false;
+  h.notify();
+  h.notify();
   assert.equal(h.state.clicks, 1);
 });
 
