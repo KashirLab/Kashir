@@ -4,7 +4,7 @@
   "private": true,
   "scripts": {
     "android": "react-native run-android",
-    "ios": "react-native run-ios --scheme KashirApp",
+    "ios": "react-native run-ios --scheme KashirApp --mode Debug",
     "start": "react-native start",
     "check": "yarn typecheck && yarn lint && yarn format",
     "typecheck": "npx tsc --noEmit",
