@@ -269,7 +269,7 @@ fi  # End of Android-specific CMakeLists.txt fixing
 if [[ $SKIP_IOS == false ]]; then
     echo ""
     echo "🔧 Fixing auto-generated podspec to include both frameworks..."
-    AUTO_GENERATED_PODSPEC="kashir.podspec"
+    AUTO_GENERATED_PODSPEC="Kashir.podspec"
     if [ -f "$AUTO_GENERATED_PODSPEC" ]; then
         # Check if it needs both frameworks
         has_both_frameworks=$(grep -c '"NostrSdkFramework.xcframework", "CdkFramework.xcframework"' "$AUTO_GENERATED_PODSPEC" || true)
@@ -277,8 +277,8 @@ if [[ $SKIP_IOS == false ]]; then
         if [[ $has_both_frameworks -eq 0 ]]; then
             echo "🛠️  Updating auto-generated podspec to include both frameworks..."
             
-            # Replace the vendored_frameworks line to include both
-            sed_inplace 's/s\.vendored_frameworks = "CdkFramework\.xcframework"/s.vendored_frameworks = "NostrSdkFramework.xcframework", "CdkFramework.xcframework"/' "$AUTO_GENERATED_PODSPEC"
+            # Either generator can leave a podspec listing only its framework.
+            sed_inplace -E 's/(s\.vendored_frameworks[[:space:]]*=[[:space:]]*)"(NostrSdkFramework|CdkFramework)\.xcframework"[[:space:]]*$/\1"NostrSdkFramework.xcframework", "CdkFramework.xcframework"/' "$AUTO_GENERATED_PODSPEC"
             
             echo "✅ Fixed auto-generated podspec to include both frameworks"
             echo "   - NostrSdkFramework.xcframework"

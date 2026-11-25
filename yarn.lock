@@ -3382,6 +3382,13 @@ __metadata:
   languageName: node
   linkType: hard
 
+"@ubjs/core@npm:0.31.0-8":
+  version: 0.31.0-8
+  resolution: "@ubjs/core@npm:0.31.0-8"
+  checksum: 3046feddd3010600f123a4d7b923708a7bac9638f128c0884ffc5da2177e77d4cc8c93bc3817c0940a4f2242fb929a12980b855f9ba44598a8088decbefc28a5
+  languageName: node
+  linkType: hard
+
 "@vscode/sudo-prompt@npm:^9.0.0":
   version: 9.3.1
   resolution: "@vscode/sudo-prompt@npm:9.3.1"
@@ -8122,6 +8129,7 @@ __metadata:
     "@react-native/eslint-config": 0.88.1
     "@types/jest": ^29.5.5
     "@types/react": ^19.2.0
+    "@ubjs/core": 0.31.0-8
     del-cli: ^5.1.0
     eslint: ^9.22.0
     eslint-config-prettier: ^10.1.1
@@ -8134,7 +8142,7 @@ __metadata:
     release-it: ^17.10.0
     turbo: ^1.10.7
     typescript: ^5.2.2
-    uniffi-bindgen-react-native: 0.29.3-1
+    uniffi-bindgen-react-native: "https://github.com/aki-mizu/uniffi-bindgen-react-native.git#commit=8cd8f97d18b59678ad9c7d9104988cbfe33057cd"
   peerDependencies:
     react: "*"
     react-native: "*"
@@ -12142,13 +12150,13 @@ __metadata:
   languageName: node
   linkType: hard
 
-"uniffi-bindgen-react-native@npm:0.29.3-1":
-  version: 0.29.3-1
-  resolution: "uniffi-bindgen-react-native@npm:0.29.3-1"
+"uniffi-bindgen-react-native@https://github.com/aki-mizu/uniffi-bindgen-react-native.git#commit=8cd8f97d18b59678ad9c7d9104988cbfe33057cd":
+  version: 0.31.0-8
+  resolution: "uniffi-bindgen-react-native@https://github.com/aki-mizu/uniffi-bindgen-react-native.git#commit=8cd8f97d18b59678ad9c7d9104988cbfe33057cd"
   bin:
-    ubrn: bin/cli.cjs
-    uniffi-bindgen-react-native: bin/cli.cjs
-  checksum: 1cd0da57d11178823658c5e9a080570b65ec3f973ffac3c9ae131399681b5825727aa3ac397060e5e9aebe524194f9dddcd70acd14968d7c8f23f1bf66e7032b
+    ubrn: ./bin/cli.cjs
+    uniffi-bindgen-react-native: ./bin/cli.cjs
+  checksum: 6629559805dc98a59ba7f2557b5811f180703c57624c14ee85dc61254398170b004a1314877c83e1247d521792af4d18eb3535bede530a85596dac34c9c465ff
   languageName: node
   linkType: hard
 
