@@ -9,6 +9,7 @@ import {
 } from 'kashir';
 import { WATCH_ADS_URL } from '../components/watchAdsBridge';
 import { walletManager } from './WalletManager';
+import { withWalletOperationLock } from './WalletOperationLock';
 
 const STORAGE_PREFIX = '@cashu_ad_withdrawal:';
 const activeWithdrawals = new Map<string, Promise<bigint>>();
@@ -115,11 +116,13 @@ async function processWithdrawal(key: string, url?: URL): Promise<bigint> {
     }
     const callback = new URL(request.callback);
     validateUrl(callback);
-    const quote = await mintWallet.mintQuote(
-      PaymentMethod.Bolt11.new(),
-      { value: amountSats },
-      'Ad reward withdrawal',
-      undefined
+    const quote = await withWalletOperationLock(() =>
+      mintWallet.mintQuote(
+        PaymentMethod.Bolt11.new(),
+        { value: amountSats },
+        'Ad reward withdrawal',
+        undefined
+      )
     );
     record = {
       state: 'pending',
@@ -144,9 +147,13 @@ async function processWithdrawal(key: string, url?: URL): Promise<bigint> {
     return BigInt(pending.amountSats);
   };
   const claimPaidQuote = async () => {
-    const quote = await mintWallet.checkMintQuote(pending.quoteId);
+    const quote = await withWalletOperationLock(() =>
+      mintWallet.checkMintQuote(pending.quoteId)
+    );
     if (quote.state === QuoteState.Paid) {
-      await mintWallet.mint(pending.quoteId, SplitTarget.None.new(), undefined);
+      await withWalletOperationLock(() =>
+        mintWallet.mint(pending.quoteId, SplitTarget.None.new(), undefined)
+      );
       return true;
     }
     return quote.state === QuoteState.Issued;
@@ -174,14 +181,18 @@ async function processWithdrawal(key: string, url?: URL): Promise<bigint> {
     let paid = false;
     try {
       // Poll serially; never issue overlapping mint requests for this quote.
-      const quote = await mintWallet.checkMintQuote(pending.quoteId);
+      const quote = await withWalletOperationLock(() =>
+        mintWallet.checkMintQuote(pending.quoteId)
+      );
       paid = quote.state === QuoteState.Paid;
       if (quote.state === QuoteState.Issued) return complete();
     } catch {
       // Keep the quote for recovery if the mint is temporarily unreachable.
     }
     if (paid) {
-      await mintWallet.mint(pending.quoteId, SplitTarget.None.new(), undefined);
+      await withWalletOperationLock(() =>
+        mintWallet.mint(pending.quoteId, SplitTarget.None.new(), undefined)
+      );
       return complete();
     }
     if (rejection) throw new Error(rejection);
@@ -192,7 +203,9 @@ async function processWithdrawal(key: string, url?: URL): Promise<bigint> {
 
 function runWithdrawal(key: string, url?: URL): Promise<bigint> {
   if (!walletManager.hasWallet()) {
-    return Promise.reject(new Error('Wallet is unavailable'));
+    return Promise.reject(
+      new Error('Create or restore your Cashu wallet before withdrawing.')
+    );
   }
   const active = activeWithdrawals.get(key);
   if (active) return active;

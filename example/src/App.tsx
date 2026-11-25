@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import {
   ActivityIndicator,
-  Linking,
+  AppState,
   StatusBar,
   StyleSheet,
   View,
@@ -17,7 +17,6 @@ import { walletManager } from './services/WalletManager';
 import { resetWalletStorage } from './services/WalletStorage';
 
 export default function App() {
-  const [safariReward, setSafariReward] = useState<string | null>(null);
   const [selectedTab, setSelectedTab] = useState<MainTabType>('wallet');
   const [hasWallet, setHasWallet] = useState(() => walletManager.hasWallet());
   const [isResetting, setIsResetting] = useState(false);
@@ -37,29 +36,15 @@ export default function App() {
       }
     };
     const unsubscribe = walletManager.subscribe(updateWallet);
-    updateWallet();
-    return unsubscribe;
-  }, []);
-
-  useEffect(() => {
-    let active = true;
-    const receiveLink = (url: string | null) => {
-      const match =
-        /^kashir-wallet:\/\/ad-withdraw\?lnurl=(lnurl1[0-9a-z]{1,4090})$/i.exec(
-          url ?? ''
-        );
-      if (active && match) {
-        setSelectedTab('wallet');
-        setSafariReward(match[1].toLowerCase());
+    const appState = AppState.addEventListener('change', (state) => {
+      if (state === 'active' && walletManager.hasWallet()) {
+        walletManager.notifyBalanceChanged();
       }
-    };
-    const subscription = Linking.addEventListener('url', ({ url }) =>
-      receiveLink(url)
-    );
-    void Linking.getInitialURL().then(receiveLink, () => {});
+    });
+    updateWallet();
     return () => {
-      active = false;
-      subscription.remove();
+      unsubscribe();
+      appState.remove();
     };
   }, []);
 
@@ -80,11 +65,7 @@ export default function App() {
       <View
         style={[styles.screen, activeTab !== 'wallet' && styles.hiddenScreen]}
       >
-        <WalletScreen
-          key={resetCount}
-          safariReward={safariReward}
-          onSafariRewardHandled={setSafariReward}
-        />
+        <WalletScreen key={resetCount} />
       </View>
       {activeTab === 'watchAds' && <WatchAdsScreen />}
       <View style={[styles.screen, !settingsVisible && styles.hiddenScreen]}>

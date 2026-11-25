@@ -1,5 +1,5 @@
-import React, { useEffect } from 'react';
-import { Alert, StyleSheet, View, Text, ActivityIndicator } from 'react-native';
+import React from 'react';
+import { StyleSheet, View, Text, ActivityIndicator } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import ConfettiCannon from 'react-native-confetti-cannon';
 import {
@@ -14,8 +14,6 @@ import { MnemonicModal } from './wallet/components/MnemonicModal';
 import { RecoverWalletModal } from './wallet/components/RecoverWalletModal';
 import { MintUrlModal } from './wallet/components/MintUrlModal';
 import { formatSats } from './wallet/utils';
-import { getErrorMessage } from './wallet/utils/errorUtils';
-import { withdrawAdReward } from '../services/AdWithdrawalService';
 
 // Reusable Success Confetti Component
 interface SuccessConfettiProps {
@@ -42,17 +40,8 @@ function SuccessConfetti({ visible, children }: SuccessConfettiProps) {
   );
 }
 
-interface WalletScreenProps {
-  safariReward: string | null;
-  onSafariRewardHandled: (reward: null) => void;
-}
-
-export function WalletScreen({
-  safariReward,
-  onSafariRewardHandled,
-}: WalletScreenProps) {
+export function WalletScreen() {
   const [showQRScanner, setShowQRScanner] = React.useState(false);
-  const [activeRedemptions, setActiveRedemptions] = React.useState(0);
 
   const {
     // State
@@ -69,7 +58,6 @@ export function WalletScreen({
     isSending,
     showConfetti,
     paymentReceivedAmount,
-    celebrateReceipt,
     showSentConfetti,
     paymentSentAmount,
     showSendingLoader,
@@ -104,32 +92,6 @@ export function WalletScreen({
     handleMintUrlSubmit,
     handleMintUrlModalClose,
   } = useWallet();
-
-  useEffect(() => {
-    if (!safariReward || isInitializing || isLoadingWallet) return;
-    onSafariRewardHandled(null);
-    if (!wallet) {
-      Alert.alert(
-        'Ad Reward',
-        'Create or restore your Cashu wallet before withdrawing.'
-      );
-      return;
-    }
-
-    setActiveRedemptions((count) => count + 1);
-    void withdrawAdReward(safariReward)
-      .finally(() => setActiveRedemptions((count) => count - 1))
-      .then(celebrateReceipt, (error: unknown) =>
-        Alert.alert('Ad Reward', getErrorMessage(error))
-      );
-  }, [
-    safariReward,
-    onSafariRewardHandled,
-    celebrateReceipt,
-    isInitializing,
-    isLoadingWallet,
-    wallet,
-  ]);
 
   const handleShowScanner = () => {
     // Close the send modal first
@@ -292,17 +254,6 @@ export function WalletScreen({
             <Text style={styles.loadingText}>Receiving Token...</Text>
             <Text style={styles.loadingSubtext}>
               Please wait while we redeem your cashu token
-            </Text>
-          </View>
-        </View>
-      )}
-
-      {(safariReward || activeRedemptions > 0) && (
-        <View style={styles.loadingContainer} accessibilityViewIsModal>
-          <View style={styles.loadingOverlay}>
-            <ActivityIndicator size="large" color="#ffffff" />
-            <Text style={styles.loadingText} accessibilityLiveRegion="polite">
-              Redeeming ad reward…
             </Text>
           </View>
         </View>

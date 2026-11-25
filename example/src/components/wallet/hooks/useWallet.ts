@@ -21,7 +21,10 @@ import { getErrorMessage } from '../utils/errorUtils';
 import { formatSats } from '../utils/formatUtils';
 import { SecureStorageService } from '../../../services/SecureStorageService';
 import { walletManager } from '../../../services/WalletManager';
-import { walletDatabasePath } from '../../../services/WalletStorage';
+import {
+  getWalletDatabasePath,
+  withWalletOperationLock,
+} from '../../../services/WalletOperationLock';
 
 const MINT_URLS_STORAGE_KEY = '@cashu_mint_urls';
 const ACTIVE_MINT_URL_STORAGE_KEY = '@cashu_active_mint_url';
@@ -47,21 +50,6 @@ export function useWallet() {
   const [paymentReceivedAmount, setPaymentReceivedAmount] = useState<bigint>(
     BigInt(0)
   );
-  const receiveConfettiTimer = useRef<ReturnType<typeof setTimeout> | null>(
-    null
-  );
-  const celebrateReceipt = useCallback((amount: bigint) => {
-    if (receiveConfettiTimer.current !== null) {
-      clearTimeout(receiveConfettiTimer.current);
-    }
-    setPaymentReceivedAmount(amount);
-    setShowConfetti(true);
-    receiveConfettiTimer.current = setTimeout(() => {
-      receiveConfettiTimer.current = null;
-      setShowConfetti(false);
-      setPaymentReceivedAmount(BigInt(0));
-    }, 3000);
-  }, []);
   const [showSentConfetti, setShowSentConfetti] = useState(false);
   const [paymentSentAmount, setPaymentSentAmount] = useState<bigint>(BigInt(0));
   const [showSendingLoader, setShowSendingLoader] = useState(false);
@@ -145,6 +133,7 @@ export function useWallet() {
   const saveActiveMintUrlToStorage = async (url: string) => {
     try {
       await AsyncStorage.setItem(ACTIVE_MINT_URL_STORAGE_KEY, url);
+      await SecureStorageService.setSharedActiveMint(url);
     } catch (error) {
       console.error('Failed to save active mint URL to storage:', error);
     }
@@ -174,6 +163,7 @@ export function useWallet() {
     try {
       await AsyncStorage.removeItem(MINT_URLS_STORAGE_KEY);
       await AsyncStorage.removeItem(ACTIVE_MINT_URL_STORAGE_KEY);
+      await SecureStorageService.setSharedActiveMint('');
     } catch (error) {
       console.error('Failed to clear mint URLs from storage:', error);
     }
@@ -328,7 +318,7 @@ export function useWallet() {
   const createMultiMintWallet = useCallback(
     async (mnemonic: string): Promise<WalletRepositoryInterface> => {
       try {
-        const store = sqliteWalletStore(walletDatabasePath);
+        const store = sqliteWalletStore(await getWalletDatabasePath());
         const wallet = new WalletRepository(mnemonic, store);
 
         console.log('Created WalletRepository with shared database');
@@ -344,7 +334,7 @@ export function useWallet() {
   const checkWalletExists = async (): Promise<boolean> => {
     try {
       // Check if shared wallet database exists
-      const dbExists = await RNFS.exists(walletDatabasePath);
+      const dbExists = await RNFS.exists(await getWalletDatabasePath());
       return dbExists;
     } catch (error) {
       console.error('Failed to check wallet existence:', error);
@@ -387,9 +377,11 @@ export function useWallet() {
       if (savedActiveMintUrl && currentMintUrls.includes(savedActiveMintUrl)) {
         walletManager.setActiveMintUrl(savedActiveMintUrl);
         setCurrentMintUrlRef(savedActiveMintUrl);
+        await SecureStorageService.setSharedActiveMint(savedActiveMintUrl);
       } else if (currentMintUrls.length > 0) {
         walletManager.setActiveMintUrl(currentMintUrls[0]);
         setCurrentMintUrlRef(currentMintUrls[0]);
+        await SecureStorageService.setSharedActiveMint(currentMintUrls[0]);
       }
 
       walletManager.setMultiMintWallet(wallet);
@@ -527,6 +519,7 @@ export function useWallet() {
       if (pendingMintUrls.length > 0) {
         walletManager.setActiveMintUrl(pendingMintUrls[0]);
         setCurrentMintUrlRef(pendingMintUrls[0]);
+        await saveActiveMintUrlToStorage(pendingMintUrls[0]);
       }
 
       walletManager.setMultiMintWallet(wallet);
@@ -597,11 +590,13 @@ export function useWallet() {
       );
 
       // Create mint quote
-      const quote = await mintWallet.mintQuote(
-        PaymentMethod.Bolt11.new(),
-        { value: amount },
-        'Lightning invoice',
-        undefined
+      const quote = await withWalletOperationLock(() =>
+        mintWallet.mintQuote(
+          PaymentMethod.Bolt11.new(),
+          { value: amount },
+          'Lightning invoice',
+          undefined
+        )
       );
 
       setInvoice(quote.request);
@@ -645,16 +640,20 @@ export function useWallet() {
         );
 
         // Check quote status
-        const quote = await mintWallet.checkMintQuote(mintQuoteId);
+        const quote = await withWalletOperationLock(() =>
+          mintWallet.checkMintQuote(mintQuoteId)
+        );
 
         if (quote.state === QuoteState.Paid) {
           // Quote is paid, execute mint
           setShowReceivingLoader(true);
 
-          await mintWallet.mint(
-            mintQuoteId,
-            SplitTarget.None.new(),
-            undefined // spending conditions
+          await withWalletOperationLock(() =>
+            mintWallet.mint(
+              mintQuoteId,
+              SplitTarget.None.new(),
+              undefined // spending conditions
+            )
           );
 
           // Stop checking
@@ -667,9 +666,15 @@ export function useWallet() {
           await updateBalance();
 
           // Show success
+          setPaymentReceivedAmount(BigInt(receiveAmount));
           setShowReceivingLoader(false);
+          setShowConfetti(true);
           closeReceiveModal();
-          celebrateReceipt(BigInt(receiveAmount));
+
+          setTimeout(() => {
+            setShowConfetti(false);
+            setPaymentReceivedAmount(BigInt(0));
+          }, 3000);
         }
       } catch (error) {
         console.error('Error checking payment:', error);
@@ -765,8 +770,12 @@ export function useWallet() {
                 setShowSendingLoader(true);
 
                 // Execute payment using prepareMelt + confirm
-                const preparedMelt = await mintWallet.prepareMelt(meltQuote.id);
-                await preparedMelt.confirm();
+                await withWalletOperationLock(async () => {
+                  const preparedMelt = await mintWallet.prepareMelt(
+                    meltQuote.id
+                  );
+                  await preparedMelt.confirm();
+                });
 
                 // Update balance
                 await updateBalance();
@@ -830,32 +839,34 @@ export function useWallet() {
       );
 
       // Prepare send (generates token)
-      const prepared = await mintWallet.prepareSend(
-        { value: amount },
-        {
-          memo: undefined,
-          conditions: undefined,
-          amountSplitTarget: SplitTarget.None.new(),
-          sendKind: SendKind.OnlineExact.new(),
-          includeFee: false,
-          useP2bk: false,
-          maxProofs: undefined,
-          metadata: new Map(),
-          p2pkSigningKeys: [],
-          p2pkLockedProofSendMode: P2pkLockedProofSendMode.Swap,
-        }
-      );
-
-      console.log('prepareSend result:', prepared);
-
-      if (!prepared) {
-        throw new Error(
-          'Failed to prepare token: prepareSend returned invalid result'
+      const token = await withWalletOperationLock(async () => {
+        const prepared = await mintWallet.prepareSend(
+          { value: amount },
+          {
+            memo: undefined,
+            conditions: undefined,
+            amountSplitTarget: SplitTarget.None.new(),
+            sendKind: SendKind.OnlineExact.new(),
+            includeFee: false,
+            useP2bk: false,
+            maxProofs: undefined,
+            metadata: new Map(),
+            p2pkSigningKeys: [],
+            p2pkLockedProofSendMode: P2pkLockedProofSendMode.Swap,
+          }
         );
-      }
 
-      // Confirm the prepared send to create the token
-      const token = await prepared.confirm(undefined);
+        console.log('prepareSend result:', prepared);
+
+        if (!prepared) {
+          throw new Error(
+            'Failed to prepare token: prepareSend returned invalid result'
+          );
+        }
+
+        // Confirm the prepared send to create the token
+        return prepared.confirm(undefined);
+      });
 
       // Update balance
       await updateBalance();
@@ -894,12 +905,14 @@ export function useWallet() {
       );
 
       // Receive token
-      const receivedAmount = await mintWallet.receive(token, {
-        amountSplitTarget: SplitTarget.None.new(),
-        p2pkSigningKeys: [],
-        preimages: [],
-        metadata: new Map(),
-      });
+      const receivedAmount = await withWalletOperationLock(() =>
+        mintWallet.receive(token, {
+          amountSplitTarget: SplitTarget.None.new(),
+          p2pkSigningKeys: [],
+          preimages: [],
+          metadata: new Map(),
+        })
+      );
 
       // Get the mint URL from the token and ensure it's in our mint URLs list
       const tokenMintUrl = tokenMint.url;
@@ -957,11 +970,13 @@ export function useWallet() {
         MintUrl.new({ url: toMintUrl }),
         CurrencyUnit.Sat.new()
       );
-      const mintQuote = await toWallet.mintQuote(
-        PaymentMethod.Bolt11.new(),
-        { value: amount },
-        'Cross-mint swap',
-        undefined
+      const mintQuote = await withWalletOperationLock(() =>
+        toWallet.mintQuote(
+          PaymentMethod.Bolt11.new(),
+          { value: amount },
+          'Cross-mint swap',
+          undefined
+        )
       );
 
       // Step 2: Pay that invoice by melting at the source mint
@@ -975,8 +990,10 @@ export function useWallet() {
         undefined,
         undefined
       );
-      const preparedMelt = await fromWallet.prepareMelt(meltQuote.id);
-      await preparedMelt.confirm();
+      await withWalletOperationLock(async () => {
+        const preparedMelt = await fromWallet.prepareMelt(meltQuote.id);
+        await preparedMelt.confirm();
+      });
 
       // Step 3: Poll until the destination mint sees the payment, then mint
       const maxAttempts = 30;
@@ -984,9 +1001,13 @@ export function useWallet() {
       let minted = false;
 
       for (let i = 0; i < maxAttempts; i++) {
-        const quote = await toWallet.checkMintQuote(mintQuote.id);
+        const quote = await withWalletOperationLock(() =>
+          toWallet.checkMintQuote(mintQuote.id)
+        );
         if (quote.state === QuoteState.Paid) {
-          await toWallet.mint(mintQuote.id, SplitTarget.None.new(), undefined);
+          await withWalletOperationLock(() =>
+            toWallet.mint(mintQuote.id, SplitTarget.None.new(), undefined)
+          );
           minted = true;
           break;
         }
@@ -1047,7 +1068,7 @@ export function useWallet() {
           CurrencyUnit.Sat.new(),
           undefined
         );
-        await mintWallet.restore();
+        await withWalletOperationLock(() => mintWallet.restore());
       }
 
       if (!(await SecureStorageService.storeSeedPhrase(recoveryMnemonic))) {
@@ -1176,9 +1197,6 @@ export function useWallet() {
   // Cleanup on unmount
   useEffect(() => {
     return () => {
-      if (receiveConfettiTimer.current !== null) {
-        clearTimeout(receiveConfettiTimer.current);
-      }
       if (paymentCheckInterval.current) {
         clearInterval(paymentCheckInterval.current);
       }
@@ -1212,7 +1230,6 @@ export function useWallet() {
     showMintUrlModal,
     showConfetti,
     paymentReceivedAmount,
-    celebrateReceipt,
     showSentConfetti,
     paymentSentAmount,
     showSendingLoader,

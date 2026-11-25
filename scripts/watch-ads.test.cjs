@@ -123,6 +123,9 @@ function createWithdrawalHarness() {
     },
     '../components/watchAdsBridge': bridge,
     './WalletManager': { walletManager },
+    './WalletOperationLock': {
+      withWalletOperationLock: (operation) => operation(),
+    },
   };
   const globals = {
     // Poll immediately in tests; retain real network-abort timers.

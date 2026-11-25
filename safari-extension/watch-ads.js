@@ -1,8 +1,7 @@
 (() => {
   const advancedButtons = new WeakSet();
   const initializedPayouts = new WeakSet();
-  const handedOffRewards = new Set();
-  let claimTappedAt = -Infinity;
+  const attemptedRewards = new Set();
 
   function selectLnurlTab() {
     const payout = document.querySelector('#payout');
@@ -43,7 +42,7 @@
     button.click();
   }
 
-  function openWalletForReward() {
+  async function redeemReward() {
     if (document.visibilityState !== 'visible') return;
     const payout = document.querySelector('#payout');
     if (!payout || !initializedPayouts.has(payout)) return;
@@ -55,23 +54,40 @@
     if (!match) return;
 
     const lnurl = match[1].toLowerCase();
-    const url = `kashir-wallet://ad-withdraw?lnurl=${lnurl}`;
-    // Safari only allows some app links while a real tap is still active.
-    if (
-      handedOffRewards.has(lnurl) ||
-      performance.now() - claimTappedAt > 1000 ||
-      navigator.userActivation?.isActive === false
-    ) {
-      return;
-    }
+    if (attemptedRewards.has(lnurl)) return;
+    attemptedRewards.add(lnurl);
 
-    handedOffRewards.add(lnurl);
-    window.location.assign(url);
+    const status = document.createElement('p');
+    status.setAttribute('role', 'status');
+    status.textContent = 'Redeeming ad reward…';
+    payout.append(status);
+
+    try {
+      for (let attempt = 0; attempt < 3; attempt++) {
+        const result = await browser.runtime.sendMessage({
+          type: 'redeem-ad-reward',
+          lnurl,
+        });
+        if (result?.amount) {
+          status.textContent = `Received ${result.amount} sats in Kashir.`;
+          return;
+        }
+        if (result?.retry !== 'true' || attempt === 2) {
+          status.textContent =
+            result?.error || 'Could not redeem the ad reward.';
+          return;
+        }
+        await new Promise((resolve) => setTimeout(resolve, 2000));
+      }
+    } catch {
+      status.textContent =
+        'Could not redeem the ad reward. Reload the page to retry.';
+    }
   }
 
   function updatePage() {
     selectLnurlTab();
-    openWalletForReward();
+    void redeemReward();
     advanceCompletedAd();
   }
 
@@ -80,25 +96,8 @@
     subtree: true,
     characterData: true,
     attributes: true,
-    attributeFilter: [
-      'href',
-      'disabled',
-      'aria-disabled',
-      'hidden',
-      'class',
-      'style',
-    ],
+    attributeFilter: ['disabled', 'aria-disabled', 'hidden', 'class', 'style'],
   });
-  document.addEventListener(
-    'click',
-    (event) => {
-      if (!event.isTrusted || !(event.target instanceof Element)) return;
-      const button = event.target.closest('button, a, [role="button"]');
-      if (button?.textContent.trim() !== '受け取り') return;
-      claimTappedAt = performance.now();
-    },
-    true
-  );
   document.addEventListener('visibilitychange', updatePage);
   window.addEventListener('focus', updatePage);
   updatePage();

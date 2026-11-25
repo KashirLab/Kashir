@@ -1,7 +1,18 @@
 import * as Keychain from 'react-native-keychain';
+import { Platform } from 'react-native';
+import { WALLET_GROUP } from './WalletOperationLock';
 
 const SEED_PHRASE_KEY = 'wallet_seed_phrase';
 const SERVICE_NAME = 'KashirWallet';
+const sharedSeedOptions = {
+  service: 'KashirSharedWalletSeed',
+  accessGroup: WALLET_GROUP,
+  accessible: Keychain.ACCESSIBLE.WHEN_UNLOCKED_THIS_DEVICE_ONLY,
+};
+const sharedMintOptions = {
+  ...sharedSeedOptions,
+  service: 'KashirSharedWalletMint',
+};
 
 export class SecureStorageService {
   /**
@@ -35,6 +46,15 @@ export class SecureStorageService {
     }
 
     try {
+      if (Platform.OS === 'ios') {
+        return Boolean(
+          await Keychain.setGenericPassword(
+            SEED_PHRASE_KEY,
+            seedPhrase,
+            sharedSeedOptions
+          )
+        );
+      }
       await Keychain.setInternetCredentials(
         SERVICE_NAME,
         SEED_PHRASE_KEY,
@@ -61,9 +81,21 @@ export class SecureStorageService {
     }
 
     try {
+      if (Platform.OS === 'ios') {
+        const shared = await Keychain.getGenericPassword(sharedSeedOptions);
+        if (shared) return shared.password;
+      }
       const credentials = await Keychain.getInternetCredentials(SERVICE_NAME);
 
       if (credentials && credentials.password) {
+        if (Platform.OS === 'ios') {
+          if (!(await this.storeSeedPhrase(credentials.password))) {
+            throw new Error(
+              'Could not migrate the wallet seed to the shared Keychain.'
+            );
+          }
+          await Keychain.resetInternetCredentials({ server: SERVICE_NAME });
+        }
         return credentials.password;
       }
       return null;
@@ -84,6 +116,12 @@ export class SecureStorageService {
 
     try {
       // Updated API for react-native-keychain v10.0.0 - service is now part of options object
+      if (
+        Platform.OS === 'ios' &&
+        (await Keychain.hasGenericPassword(sharedSeedOptions))
+      ) {
+        return true;
+      }
       const credentials = await Keychain.hasInternetCredentials({
         server: SERVICE_NAME,
       });
@@ -109,11 +147,29 @@ export class SecureStorageService {
 
     try {
       // Updated API for react-native-keychain v10.0.0 - service is now part of options object
+      if (Platform.OS === 'ios') {
+        await Keychain.resetGenericPassword(sharedMintOptions);
+        await Keychain.resetGenericPassword(sharedSeedOptions);
+      }
       await Keychain.resetInternetCredentials({ server: SERVICE_NAME });
       return true;
     } catch (error) {
       console.error('Failed to remove seed phrase:', error);
       return false;
+    }
+  }
+
+  static async setSharedActiveMint(url: string): Promise<void> {
+    if (Platform.OS !== 'ios') return;
+    if (url) {
+      const saved = await Keychain.setGenericPassword(
+        'active_mint',
+        url,
+        sharedMintOptions
+      );
+      if (!saved) throw new Error('Could not save the active mint for Safari.');
+    } else {
+      await Keychain.resetGenericPassword(sharedMintOptions);
     }
   }
 
