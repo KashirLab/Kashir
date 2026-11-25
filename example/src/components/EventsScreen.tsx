@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useState, useEffect, useEffectEvent, useMemo } from 'react';
 import { TouchableOpacity, Text } from 'react-native';
 import { SafeAreaView as SafeAreaViewContext } from 'react-native-safe-area-context';
 import { NostrClientService } from '../services/NostrClient';
@@ -26,7 +26,6 @@ export function EventsScreen({
   userNpub,
   navigation,
 }: EventsScreenProps) {
-  const [isClientReady, setIsClientReady] = useState(false);
   const [client, setClient] = useState<Client | null>(null);
   const [isCreateEventModalVisible, setIsCreateEventModalVisible] =
     useState(false);
@@ -59,7 +58,6 @@ export function EventsScreen({
 
       if (ready && currentClient) {
         setClient(currentClient);
-        setIsClientReady(true);
         return true;
       }
       return false;
@@ -84,26 +82,26 @@ export function EventsScreen({
     };
   }, [clientService]);
 
-  // Initialize services
-  useEffect(() => {
-    if (isClientReady && !eventsLoading && !calendarsLoading) {
-      if (currentView === 'events' && events.length === 0) {
-        fetchEvents(userNpub);
-      } else if (currentView === 'calendars' && calendars.length === 0) {
-        fetchCalendars(userNpub);
+  const loadSelectedView = useEffectEvent(
+    (view: typeof currentView, npub: string) => {
+      if (view === 'events' && events.length === 0 && !eventsLoading) {
+        fetchEvents(npub);
+      } else if (
+        view === 'calendars' &&
+        calendars.length === 0 &&
+        !calendarsLoading
+      ) {
+        fetchCalendars(npub);
       }
     }
-  }, [
-    isClientReady,
-    currentView,
-    events.length,
-    calendars.length,
-    eventsLoading,
-    calendarsLoading,
-    fetchEvents,
-    fetchCalendars,
-    userNpub,
-  ]);
+  );
+
+  // Read the cache when the client or selected view changes.
+  useEffect(() => {
+    if (client) {
+      loadSelectedView(currentView, userNpub);
+    }
+  }, [client, currentView, userNpub]);
 
   const handleEventPress = (event: CalendarEvent) => {
     navigation.navigate('EventDetail', {
@@ -130,16 +128,10 @@ export function EventsScreen({
 
   const handleCalendarModePress = () => {
     setCurrentView('calendars');
-    if (calendars.length === 0 && !calendarsLoading) {
-      fetchCalendars(userNpub);
-    }
   };
 
   const handleEventsModePress = () => {
     setCurrentView('events');
-    if (events.length === 0 && !eventsLoading) {
-      fetchEvents(userNpub);
-    }
   };
 
   const handleCreateEvent = () => {
