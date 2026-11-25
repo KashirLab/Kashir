@@ -110,26 +110,6 @@ jobs:
             echo "✅ Version changes committed and pushed!"
           fi
 
-      - name: Create .env file from secrets
-        run: |
-          echo "Creating .env file from GitHub secrets..."
-          
-          # Create .env file in example directory for the build process
-          cd example
-          
-          # Add your secrets here
-          echo "GOOGLE_MAPS_API_KEY=${{ secrets.GOOGLE_MAPS_API_KEY }}" >> .env
-          
-          echo ".env file created successfully"
-          
-          # Verify the file was created (without showing content for security)
-          if [ -f ".env" ]; then
-            echo "✅ .env file created in example directory"
-          else
-            echo "❌ Failed to create .env file"
-            exit 1
-          fi
-
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
@@ -201,10 +181,10 @@ jobs:
           df -h
           
           # Clean up Rust target directories to free space
-          find deps/nostr-sdk-ffi/target -type f -name "*.rlib" -delete || true
-          find deps/nostr-sdk-ffi/target -type f -name "*.rmeta" -delete || true
-          find deps/nostr-sdk-ffi/target -type d -name "incremental" -exec rm -rf {} + || true
-          find deps/nostr-sdk-ffi/target -type d -name "deps" -exec rm -rf {} + || true
+          find deps/cdk/target -type f -name "*.rlib" -delete || true
+          find deps/cdk/target -type f -name "*.rmeta" -delete || true
+          find deps/cdk/target -type d -name "incremental" -exec rm -rf {} + || true
+          find deps/cdk/target -type d -name "deps" -exec rm -rf {} + || true
           
           echo "Disk usage after Rust cleanup:"
           df -h
@@ -226,13 +206,6 @@ jobs:
           # Also run gradlew directly to ensure release APK is built
           cd android
           ./gradlew assembleRelease --stacktrace
-
-      - name: Cleanup sensitive files
-        if: always()
-        run: |
-          # Clean up .env file containing sensitive data
-          rm -f example/.env
-          echo "✅ Cleaned up sensitive files"
 
       - name: Generate tag name from version
         run: |
@@ -338,5 +311,3 @@ jobs:
           prerelease: ${{ github.event_name != 'workflow_dispatch' }}
           draft: ${{ github.event_name == 'workflow_dispatch' }}
           token: ${{ secrets.GITHUB_TOKEN }}
-
- 

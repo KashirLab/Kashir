@@ -5,3 +5,6 @@ rust:
 
 ios:
   frameworkName: CdkFramework
+  cargoExtras: [--no-default-features, --features=bip353]
+android:
+  cargoExtras: [--no-default-features, --features=bip353]

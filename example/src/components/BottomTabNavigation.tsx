@@ -1,7 +1,12 @@
 import React from 'react';
 import { View, TouchableOpacity, Text, StyleSheet } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import type { MainTabType } from '../types';
+const tabs = [
+  { id: 'wallet', label: 'Wallet' },
+  { id: 'settings', label: 'Settings' },
+] as const;
+
+export type MainTabType = (typeof tabs)[number]['id'];
 
 interface BottomTabNavigationProps {
   activeTab: MainTabType;
@@ -16,58 +21,22 @@ export function BottomTabNavigation({
 
   return (
     <View style={[styles.tabContainer, { paddingBottom: insets.bottom }]}>
-      <TouchableOpacity
-        style={[styles.tab, activeTab === 'wallet' && styles.activeTab]}
-        onPress={() => onTabChange('wallet')}
-      >
-        <Text
-          style={[
-            styles.tabText,
-            activeTab === 'wallet' && styles.activeTabText,
-          ]}
-        >
-          Wallet
-        </Text>
-      </TouchableOpacity>
-      <TouchableOpacity
-        style={[styles.tab, activeTab === 'nostr' && styles.activeTab]}
-        onPress={() => onTabChange('nostr')}
-      >
-        <Text
-          style={[
-            styles.tabText,
-            activeTab === 'nostr' && styles.activeTabText,
-          ]}
-        >
-          Nostr
-        </Text>
-      </TouchableOpacity>
-      <TouchableOpacity
-        style={[styles.tab, activeTab === 'events' && styles.activeTab]}
-        onPress={() => onTabChange('events')}
-      >
-        <Text
-          style={[
-            styles.tabText,
-            activeTab === 'events' && styles.activeTabText,
-          ]}
-        >
-          Events
-        </Text>
-      </TouchableOpacity>
-      <TouchableOpacity
-        style={[styles.tab, activeTab === 'settings' && styles.activeTab]}
-        onPress={() => onTabChange('settings')}
-      >
-        <Text
-          style={[
-            styles.tabText,
-            activeTab === 'settings' && styles.activeTabText,
-          ]}
-        >
-          Settings
-        </Text>
-      </TouchableOpacity>
+      {tabs.map(({ id, label }) => {
+        const selected = activeTab === id;
+        return (
+          <TouchableOpacity
+            key={id}
+            accessibilityRole="tab"
+            accessibilityState={{ selected }}
+            style={[styles.tab, selected && styles.activeTab]}
+            onPress={() => onTabChange(id)}
+          >
+            <Text style={[styles.tabText, selected && styles.activeTabText]}>
+              {label}
+            </Text>
+          </TouchableOpacity>
+        );
+      })}
     </View>
   );
 }

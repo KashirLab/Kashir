@@ -1,12 +1,3 @@
 export { BottomTabNavigation } from './BottomTabNavigation';
-export { EventDetail } from './EventDetail';
-export { EventMapScreen } from './EventMapScreen';
-export { Header } from './Header';
-export { LoginScreen } from './LoginScreen';
-export { MyEventsScreen } from './MyEventsScreen';
-export { Post } from './Post';
-export { PostList } from './PostList';
-export { PostsScreen } from './PostsScreen';
 export { SettingsScreen } from './SettingsScreen';
-export { TabNavigation } from './TabNavigation';
 export { WalletScreen } from './WalletScreen';

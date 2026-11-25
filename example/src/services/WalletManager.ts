@@ -75,30 +75,6 @@ export class WalletManager {
   // Wallet operations are now handled in useWallet hook
   // This maintains single responsibility and leverages MultiMintWallet's native methods
 
-  // Simple payment method for zapping (used by Post components)
-  async sendPayment(invoice: string): Promise<void> {
-    if (!this.multiMintWallet || !this.activeMintUrl) {
-      throw new Error('Wallet not initialized');
-    }
-
-    const { MintUrl, CurrencyUnit, PaymentMethod } = await import('kashir');
-
-    const wallet = await this.multiMintWallet.getWallet(
-      MintUrl.new({ url: this.activeMintUrl }),
-      CurrencyUnit.Sat.new()
-    );
-
-    const meltQuote = await wallet.meltQuote(
-      PaymentMethod.Bolt11.new(),
-      invoice,
-      undefined,
-      undefined
-    );
-
-    const preparedMelt = await wallet.prepareMelt(meltQuote.id);
-    await preparedMelt.confirm();
-  }
-
   // State subscription for React components
   subscribe(listener: () => void): () => void {
     this.listeners.add(listener);

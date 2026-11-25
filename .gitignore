@@ -80,9 +80,8 @@ example/android/app/release.keystore
 lib/
 
 # React Native Codegen
-NostrSdkFramework.xcframework/
 CdkFramework.xcframework/
-kashir.podspec
+Kashir.podspec
 ios/
 /android/
 cpp/

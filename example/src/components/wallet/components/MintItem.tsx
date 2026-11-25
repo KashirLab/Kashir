@@ -16,7 +16,6 @@ interface MintItemProps {
   onSetActive: (url: string) => void;
   onRemove: (url: string) => void;
   onRefresh?: (url: string) => Promise<void>;
-  onReview?: (url: string) => void;
 }
 
 export function MintItem({
@@ -26,7 +25,6 @@ export function MintItem({
   onSetActive,
   onRemove,
   onRefresh,
-  onReview,
 }: MintItemProps) {
   const [isRefreshing, setIsRefreshing] = useState(false);
 
@@ -61,12 +59,6 @@ export function MintItem({
       // Silently handle errors - balance will remain unchanged
     } finally {
       setIsRefreshing(false);
-    }
-  };
-
-  const handleReview = () => {
-    if (onReview) {
-      onReview(mintUrl);
     }
   };
 
@@ -118,15 +110,6 @@ export function MintItem({
         </View>
 
         <View style={styles.buttonRow}>
-          {onReview && (
-            <TouchableOpacity
-              onPress={handleReview}
-              style={styles.reviewButton}
-            >
-              <Text style={styles.reviewButtonText}>Review</Text>
-            </TouchableOpacity>
-          )}
-
           <TouchableOpacity
             onPress={handleRemove}
             style={[
@@ -220,17 +203,6 @@ const styles = StyleSheet.create({
     borderRadius: 4,
   },
   setActiveButtonText: {
-    color: '#fff',
-    fontSize: 12,
-    fontWeight: '500',
-  },
-  reviewButton: {
-    backgroundColor: '#ff9500',
-    paddingHorizontal: 12,
-    paddingVertical: 6,
-    borderRadius: 4,
-  },
-  reviewButtonText: {
     color: '#fff',
     fontSize: 12,
     fontWeight: '500',

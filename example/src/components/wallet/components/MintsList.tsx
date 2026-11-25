@@ -18,7 +18,6 @@ interface MintsListProps {
   onAddMint: () => void;
   onUpdateTotalBalance?: () => Promise<void>;
   onSwap?: () => void;
-  onReview?: (url: string) => void;
   refreshToken?: number;
 }
 
@@ -31,7 +30,6 @@ export function MintsList({
   onAddMint,
   onUpdateTotalBalance,
   onSwap,
-  onReview,
   refreshToken,
 }: MintsListProps) {
   const [mintBalances, setMintBalances] = useState<Map<string, bigint>>(
@@ -124,7 +122,6 @@ export function MintsList({
               onSetActive={onSetActive}
               onRemove={onRemove}
               onRefresh={handleMintRefresh}
-              onReview={onReview}
             />
           );
         })}

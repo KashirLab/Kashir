@@ -1,5 +1,5 @@
 #!/bin/bash
-# Align CDK with the UniFFI version used by Nostr FFI and the React Native generator.
+# Align CDK with the UniFFI version used by the React Native generator.
 
 set -e
 

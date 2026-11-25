@@ -1,7 +1,7 @@
 {
   "name": "kashir",
   "version": "0.0.34",
-  "description": "Kashir - Nostr client with built-in Cashu wallet",
+  "description": "Kashir - Mobile Cashu wallet",
   "source": "./src/index.tsx",
   "main": "./lib/commonjs/index.js",
   "module": "./lib/module/index.js",
@@ -38,11 +38,10 @@
     "!**/.*"
   ],
   "scripts": {
-    "ubrn:ios:nostr": "ubrn build ios --config ubrn.nostr.config.yaml --and-generate",
-    "ubrn:ios:cdk": "./scripts/patch-cdk-uniffi.sh && ubrn build ios --config ubrn.cdk.config.yaml --and-generate",
-    "ubrn:ios": "yarn ubrn:ios:nostr && yarn ubrn:ios:cdk && ./scripts/fix-cpp-bindings.sh && ./scripts/patch-exports.sh && (cd example/ios && pod install)",
-    "ubrn:android": "./scripts/patch-cdk-uniffi.sh && ./scripts/build-android.sh && ./scripts/patch-exports.sh",
-    "ubrn:clean": "rm -Rf cpp/ android/src/main/java ios/ src/Native* src/generated/ src/index.ts* NostrSdkFramework.xcframework CdkFramework.xcframework",
+    "ubrn:ios:cdk": "./scripts/patch-cdk-uniffi.sh && ubrn build ios --config ubrn.cdk.config.yaml --and-generate \"$@\" && ./scripts/fix-ios-header.sh",
+    "ubrn:ios": "yarn ubrn:ios:cdk && (cd example/ios && pod install)",
+    "ubrn:android": "./scripts/patch-cdk-uniffi.sh && ./scripts/build-android.sh",
+    "ubrn:clean": "rm -Rf cpp/ android/src/main/java ios/ src/Native* src/generated/ src/index.ts* CdkFramework.xcframework",
     "example": "yarn workspace kashir-example",
     "test": "jest",
     "typecheck": "tsc",
@@ -53,8 +52,7 @@
     "release": "release-it"
   },
   "keywords": [
-    "nostr",
-    "rust-nostr",
+    "cashu",
     "react-native",
     "ios",
     "android"

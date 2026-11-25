@@ -10,9 +10,7 @@ export { ReceiveModal } from './components/ReceiveModal';
 export { SendModal } from './components/SendModal';
 export { QRScanner } from './components/QRScanner';
 export { MintUrlModal } from './components/MintUrlModal';
-export { MintRecommendationsModal } from './components/MintRecommendationsModal';
 export { SwapModal } from './components/SwapModal';
-export { MintReviewModal } from './components/MintReviewModal';
 
 // Hooks
 export { useWallet } from './hooks/useWallet';

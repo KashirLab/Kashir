@@ -23,7 +23,7 @@ interface ReceiveModalProps {
   onAmountChange: (amount: string) => void;
   onCreateInvoice: () => void;
   onCopyInvoice: () => void;
-  onReceiveCashuToken: (tokenString: string) => Promise<boolean>;
+  onReceiveCashuToken: (tokenString: string) => Promise<bigint>;
 }
 
 export function ReceiveModal({

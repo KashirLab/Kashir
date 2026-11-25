@@ -9,7 +9,6 @@ import {
   Alert,
   ActivityIndicator,
 } from 'react-native';
-import { MintRecommendationsModal } from './MintRecommendationsModal';
 
 interface MintUrlModalProps {
   visible: boolean;
@@ -28,8 +27,6 @@ export function MintUrlModal({
     isWalletCreation ? 'https://mint.kashir.xyz' : ''
   );
   const [isValidating, setIsValidating] = useState(false);
-  const [showRecommendationsModal, setShowRecommendationsModal] =
-    useState(false);
 
   // Reset validation state and URL when modal becomes visible
   useEffect(() => {
@@ -138,15 +135,6 @@ export function MintUrlModal({
     onClose();
   };
 
-  const handleShowRecommendations = () => {
-    setShowRecommendationsModal(true);
-  };
-
-  const handleSelectFromRecommendations = (recommendedUrl: string) => {
-    setUrl(recommendedUrl);
-    setShowRecommendationsModal(false);
-  };
-
   return (
     <Modal
       visible={visible}
@@ -201,26 +189,8 @@ export function MintUrlModal({
               <Text style={styles.submitText}>Connect to Mint</Text>
             )}
           </TouchableOpacity>
-
-          <View style={styles.divider} />
-
-          <TouchableOpacity
-            onPress={handleShowRecommendations}
-            style={styles.recommendationsButton}
-          >
-            <Text style={styles.recommendationsButtonText}>
-              Choose from Recommended Mints
-            </Text>
-            <Text style={styles.recommendationsButtonArrow}>→</Text>
-          </TouchableOpacity>
         </View>
       </View>
-
-      <MintRecommendationsModal
-        visible={showRecommendationsModal}
-        onClose={() => setShowRecommendationsModal(false)}
-        onSelectMint={handleSelectFromRecommendations}
-      />
     </Modal>
   );
 }
@@ -298,29 +268,5 @@ const styles = StyleSheet.create({
   },
   loadingText: {
     marginLeft: 8,
-  },
-  divider: {
-    height: 1,
-    backgroundColor: '#333333',
-    marginVertical: 24,
-  },
-  recommendationsButton: {
-    backgroundColor: '#2a2a2a',
-    borderWidth: 1,
-    borderColor: '#444444',
-    borderRadius: 8,
-    padding: 16,
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-  },
-  recommendationsButtonText: {
-    fontSize: 16,
-    color: '#ffffff',
-    fontWeight: '500',
-  },
-  recommendationsButtonArrow: {
-    fontSize: 18,
-    color: '#007AFF',
   },
 });

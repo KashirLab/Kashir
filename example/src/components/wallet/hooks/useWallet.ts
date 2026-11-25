@@ -13,6 +13,7 @@ import {
   generateMnemonic,
   Token,
   SendKind,
+  P2pkLockedProofSendMode,
   type WalletRepositoryInterface,
 } from 'kashir';
 import RNFS from 'react-native-fs';
@@ -54,7 +55,8 @@ export function useWallet() {
   const [showMnemonicModal, setShowMnemonicModal] = useState(false);
   const [pendingWalletCreation, setPendingWalletCreation] = useState<any>(null);
   const [showRecoverModal, setShowRecoverModal] = useState(false);
-  const [shouldShowRecoverAfterMint] = useState(false);
+  const [shouldShowRecoverAfterMint, setShouldShowRecoverAfterMint] =
+    useState(false);
   const [showRecoveryLoader, setShowRecoveryLoader] = useState(false);
   const [showRecoveryConfetti, setShowRecoveryConfetti] = useState(false);
 
@@ -823,6 +825,8 @@ export function useWallet() {
           useP2bk: false,
           maxProofs: undefined,
           metadata: new Map(),
+          p2pkSigningKeys: [],
+          p2pkLockedProofSendMode: P2pkLockedProofSendMode.Swap,
         }
       );
 
@@ -994,7 +998,14 @@ export function useWallet() {
   // WALLET RECOVERY
   // ============================================================================
 
-  const handleRecoverWallet = () => {
+  const handleRecoverWallet = async () => {
+    await loadMintUrlsFromStorage();
+    if (walletManager.getMintUrls().length === 0) {
+      setShouldShowRecoverAfterMint(true);
+      promptForMintUrl();
+      return;
+    }
+
     setShowRecoverModal(true);
   };
 
@@ -1006,36 +1017,31 @@ export function useWallet() {
 
       setShowRecoveryLoader(true);
 
-      // Store the seed phrase
-      await SecureStorageService.storeSeedPhrase(recoveryMnemonic);
-
-      // Create MultiMintWallet with recovery phrase
-      const wallet = await createMultiMintWallet(recoveryMnemonic);
-      walletManager.setMultiMintWallet(wallet);
-
-      // Load saved mints
       await loadMintUrlsFromStorage();
+      const recoveryMintUrls = walletManager.getMintUrls();
+      const firstMintUrl = recoveryMintUrls[0];
+      if (!firstMintUrl) {
+        throw new Error('Add a mint before recovering your wallet');
+      }
 
-      // Add all mints and restore
-      for (const mintUrl of mintUrls) {
-        await wallet.createWallet(
+      const wallet = await createMultiMintWallet(recoveryMnemonic);
+      for (const mintUrl of recoveryMintUrls) {
+        const mintWallet = await wallet.getOrCreateWallet(
           MintUrl.new({ url: mintUrl }),
-          undefined,
+          CurrencyUnit.Sat.new(),
           undefined
         );
-
-        // Restore funds from this mint
-        await wallet.restore(MintUrl.new({ url: mintUrl }));
+        await mintWallet.restore();
       }
 
-      // Set active mint
-      if (mintUrls.length > 0) {
-        walletManager.setActiveMintUrl(mintUrls[0]);
-        setCurrentMintUrlRef(mintUrls[0]);
+      if (!(await SecureStorageService.storeSeedPhrase(recoveryMnemonic))) {
+        throw new Error('Could not save the recovery phrase to secure storage');
       }
 
-      // Update balance
-      await updateBalance();
+      walletManager.setActiveMintUrl(firstMintUrl);
+      setCurrentMintUrlRef(firstMintUrl);
+      await saveActiveMintUrlToStorage(firstMintUrl);
+      walletManager.setMultiMintWallet(wallet);
 
       setShowRecoveryLoader(false);
       setShowRecoverModal(false);
@@ -1084,6 +1090,9 @@ export function useWallet() {
       if (shouldCreateWalletAfterMint) {
         setShouldCreateWalletAfterMint(false);
         await testWalletCreation();
+      } else if (shouldShowRecoverAfterMint) {
+        setShouldShowRecoverAfterMint(false);
+        setShowRecoverModal(true);
       }
     } catch (error) {
       console.error('Failed to add mint URL:', error);
@@ -1094,6 +1103,7 @@ export function useWallet() {
   const handleMintUrlModalClose = () => {
     setShowMintUrlModal(false);
     setShouldCreateWalletAfterMint(false);
+    setShouldShowRecoverAfterMint(false);
   };
 
   // ============================================================================
@@ -1191,7 +1201,6 @@ export function useWallet() {
     showMnemonicModal,
     pendingWalletCreation,
     showRecoverModal,
-    shouldShowRecoverAfterMint,
     shouldCreateWalletAfterMint,
     showRecoveryLoader,
     showRecoveryConfetti,

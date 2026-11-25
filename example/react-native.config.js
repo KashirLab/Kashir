@@ -4,7 +4,7 @@ const pkg = require('../package.json');
 module.exports = {
   project: {
     ios: {
-      // The binding build installs CocoaPods after both frameworks are available.
+      // The binding build installs CocoaPods after the CDK framework is available.
       automaticPodsInstallation: false,
     },
   },
