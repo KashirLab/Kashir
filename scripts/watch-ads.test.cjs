@@ -222,6 +222,7 @@ function createAdPageHarness() {
     button: null,
     clicks: 0,
     scrolls: [],
+    adCard: null,
   };
   const listeners = {};
   let notify;
@@ -250,11 +251,13 @@ function createAdPageHarness() {
           ? state.payoutControls
           : [],
       querySelector: (selector) =>
-        selector === '#payout'
-          ? state.payout
-          : selector === '.actions #view-complete' && state.completed
-            ? completed
-            : null,
+        selector === 'article.vcard.compact-footer'
+          ? state.adCard
+          : selector === '#payout'
+            ? state.payout
+            : selector === '.actions #view-complete' && state.completed
+              ? completed
+              : null,
       addEventListener: (event, callback) => {
         listeners[event] = callback;
       },
@@ -363,8 +366,17 @@ test('completed ads only advance while the page is visible and focused', () => {
   assert.equal(h.state.clicks, 1);
 });
 
-test('advances once from the completed payout screen', () => {
+test('scrolls once per displayed ad, including after the completed payout screen', () => {
   const h = createAdPageHarness();
+  const card = () => ({
+    visibility: 'visible',
+    getClientRects: () => [{}],
+    querySelector: () => null,
+  });
+  h.state.adCard = card();
+  h.notify();
+  h.notify();
+  assert.deepEqual(h.state.scrolls, [[0, 800]]);
   const nextAd = h.nextButton();
   nextAd.textContent = '次の広告を見る';
   nextAd.disabled = true;
@@ -376,12 +388,38 @@ test('advances once from the completed payout screen', () => {
   h.notify();
   h.notify();
   assert.equal(h.state.clicks, 1);
-  assert.deepEqual(h.state.scrolls, []);
+  assert.deepEqual(h.state.scrolls, [[0, 800]]);
 
   h.state.payoutControls = [];
   h.notify();
+  h.state.adCard = null;
   h.notify();
   assert.deepEqual(h.state.scrolls, [[0, 800]]);
+
+  const video = { readyState: 1 };
+  h.state.adCard = {
+    ...card(),
+    querySelector: (selector) => (selector === 'video' ? video : null),
+  };
+  h.notify();
+  assert.deepEqual(h.state.scrolls, [[0, 800]]);
+
+  video.readyState = 2;
+  h.listeners.loadeddata();
+  h.notify();
+  assert.deepEqual(h.state.scrolls, [
+    [0, 800],
+    [0, 800],
+  ]);
+
+  h.state.adCard = card();
+  h.notify();
+  h.notify();
+  assert.deepEqual(h.state.scrolls, [
+    [0, 800],
+    [0, 800],
+    [0, 800],
+  ]);
 });
 
 test('auto-advance ignores hidden buttons, other labels, and disabled accessibility states', () => {

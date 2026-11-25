@@ -6,13 +6,8 @@
   const attemptedRewards = new Set();
   let redeemingReward = false;
   const nextAdLabel = '次の広告を見る';
-  const scrollKey = 'kashir:scroll-after-next-ad';
-  let scrollDeadline = 0;
-  try {
-    scrollDeadline = Number(window.sessionStorage.getItem(scrollKey));
-  } catch {
-    // Scrolling still works within the same document if storage is unavailable.
-  }
+  const adCardSelector = 'article.vcard.compact-footer';
+  const scrolledAdCards = new WeakSet();
 
   let screenLock;
   let requestingScreenLock = false;
@@ -55,24 +50,32 @@
     ).filter((control) => control.textContent.trim() === nextAdLabel);
   }
 
-  function scrollAfterNextAd() {
-    if (!scrollDeadline || document.visibilityState !== 'visible') return;
-    const expired = Date.now() > scrollDeadline;
+  function scrollDisplayedAd() {
+    if (document.visibilityState !== 'visible') return;
+
+    const ad = document.querySelector(adCardSelector);
+    const video = ad?.querySelector('video');
     if (
-      !expired &&
+      !ad ||
+      scrolledAdCards.has(ad) ||
+      !ad.getClientRects().length ||
+      getComputedStyle(ad).visibility !== 'visible' ||
+      ad.querySelector('.media-waiting') ||
+      (video && video.readyState < 2) ||
       payoutNextAdControls().some((control) => control.getClientRects().length)
-    )
+    ) {
       return;
-
-    scrollDeadline = 0;
-    try {
-      window.sessionStorage.removeItem(scrollKey);
-    } catch {
-      // Storage is optional for navigation within the same document.
     }
-    if (expired) return;
 
+    scrolledAdCards.add(ad);
     window.requestAnimationFrame(() => {
+      if (
+        document.visibilityState !== 'visible' ||
+        document.querySelector(adCardSelector) !== ad
+      ) {
+        scrolledAdCards.delete(ad);
+        return;
+      }
       window.scrollTo(0, document.scrollingElement.scrollHeight);
     });
   }
@@ -91,14 +94,6 @@
     }
 
     advancedButtons.add(button);
-    if (label === nextAdLabel) {
-      scrollDeadline = Date.now() + 30_000;
-      try {
-        window.sessionStorage.setItem(scrollKey, String(scrollDeadline));
-      } catch {
-        // Scrolling still works within the same document.
-      }
-    }
     button.click();
     return true;
   }
@@ -167,7 +162,7 @@
     selectLnurlTab();
     redeemReward();
     advanceCompletedAd();
-    scrollAfterNextAd();
+    scrollDisplayedAd();
   }
 
   window.__kashirSafariWatchAdsObserver = new MutationObserver(updatePage);
@@ -182,6 +177,7 @@
   window.addEventListener('pageshow', keepScreenAwake);
   keepScreenAwake();
   document.addEventListener('visibilitychange', updatePage);
+  document.addEventListener('loadeddata', scrollDisplayedAd, true);
   window.addEventListener('focus', updatePage);
   updatePage();
 })();

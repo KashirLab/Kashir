@@ -29,26 +29,27 @@ export const WATCH_ADS_SCRIPT = `
     window.ReactNativeWebView.postMessage(JSON.stringify({ type: ${JSON.stringify(MESSAGE_TYPE)}, lnurl: lnurl }));
   }
   var nextAdLabel = '次の広告を見る';
-  var scrollKey = 'kashir:scroll-after-next-ad';
-  var scrollDeadline = 0;
-  try {
-    scrollDeadline = Number(window.sessionStorage.getItem(scrollKey));
-  } catch {}
+  var adCardSelector = 'article.vcard.compact-footer';
+  var scrolledAdCards = new WeakSet();
   function payoutNextAdControls() {
     return Array.from(document.querySelectorAll('#payout button.primary, #payout a[href="/"]')).filter(function (control) {
       return control.textContent.trim() === nextAdLabel;
     });
   }
-  function scrollAfterNextAd() {
-    if (!scrollDeadline || document.visibilityState !== 'visible') return;
-    var expired = Date.now() > scrollDeadline;
-    if (!expired && payoutNextAdControls().some(function (control) { return control.getClientRects().length; })) return;
-    scrollDeadline = 0;
-    try {
-      window.sessionStorage.removeItem(scrollKey);
-    } catch {}
-    if (expired) return;
+  function scrollDisplayedAd() {
+    if (document.visibilityState !== 'visible') return;
+    var ad = document.querySelector(adCardSelector);
+    var video = ad && ad.querySelector('video');
+    if (!ad || scrolledAdCards.has(ad) || !ad.getClientRects().length ||
+      getComputedStyle(ad).visibility !== 'visible' || ad.querySelector('.media-waiting') ||
+      (video && video.readyState < 2) ||
+      payoutNextAdControls().some(function (control) { return control.getClientRects().length; })) return;
+    scrolledAdCards.add(ad);
     window.requestAnimationFrame(function () {
+      if (document.visibilityState !== 'visible' || document.querySelector(adCardSelector) !== ad) {
+        scrolledAdCards.delete(ad);
+        return;
+      }
       window.scrollTo(0, document.scrollingElement.scrollHeight);
     });
   }
@@ -57,12 +58,6 @@ export const WATCH_ADS_SCRIPT = `
     if (button.textContent.trim() !== label || !button.getClientRects().length) return false;
     if (getComputedStyle(button).visibility !== 'visible' || advancedButtons.has(button)) return false;
     advancedButtons.add(button);
-    if (label === nextAdLabel) {
-      scrollDeadline = Date.now() + 30000;
-      try {
-        window.sessionStorage.setItem(scrollKey, String(scrollDeadline));
-      } catch {}
-    }
     button.click();
     return true;
   }
@@ -79,7 +74,7 @@ export const WATCH_ADS_SCRIPT = `
     selectLnurlTab();
     reportLnurl();
     advanceCompletedAd();
-    scrollAfterNextAd();
+    scrollDisplayedAd();
   }
   window.__kashirWatchAdsObserver = new MutationObserver(updatePage);
   window.__kashirWatchAdsObserver.observe(document.documentElement, {
@@ -87,6 +82,7 @@ export const WATCH_ADS_SCRIPT = `
     attributeFilter: ['href', 'disabled', 'aria-disabled', 'hidden', 'class', 'style']
   });
   document.addEventListener('visibilitychange', updatePage);
+  document.addEventListener('loadeddata', scrollDisplayedAd, true);
   window.addEventListener('focus', updatePage);
   updatePage();
 })();
