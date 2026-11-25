@@ -177,6 +177,6 @@
   },
   "dependencies": {
     "@ubjs/core": "0.31.0-8",
-    "uniffi-bindgen-react-native": "https://github.com/aki-mizu/uniffi-bindgen-react-native.git#commit=8cd8f97d18b59678ad9c7d9104988cbfe33057cd"
+    "uniffi-bindgen-react-native": "0.31.0-8"
   }
 }
