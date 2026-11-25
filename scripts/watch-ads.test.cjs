@@ -170,6 +170,7 @@ test('the page bridge reports visible LNURLs, changes, and removal without initi
   const messages = [];
   const window = {
     location: { origin: ORIGIN },
+    addEventListener() {},
     ReactNativeWebView: {
       postMessage: (value) => messages.push(JSON.parse(value)),
     },
@@ -179,6 +180,7 @@ test('the page bridge reports visible LNURLs, changes, and removal without initi
     window,
     document: {
       documentElement: {},
+      addEventListener() {},
       querySelector: () => (href ? { getAttribute: () => href } : null),
     },
     MutationObserver: class {
@@ -188,7 +190,7 @@ test('the page bridge reports visible LNURLs, changes, and removal without initi
       observe() {}
     },
   });
-  vm.runInContext(bridge.WATCH_ADS_LNURL_SCRIPT, context);
+  vm.runInContext(bridge.WATCH_ADS_SCRIPT, context);
   href = `lightning:${lnurl.toUpperCase()}`;
   notify();
   notify();
@@ -198,8 +200,147 @@ test('the page bridge reports visible LNURLs, changes, and removal without initi
     messages.map((message) => message.lnurl),
     [null, lnurl, null]
   );
-  vm.runInContext(bridge.WATCH_ADS_LNURL_SCRIPT, context);
+  vm.runInContext(bridge.WATCH_ADS_SCRIPT, context);
   assert.equal(messages.length, 3, 'Do not install duplicate observers');
+});
+
+function createAdPageHarness() {
+  const state = {
+    completed: false,
+    focused: true,
+    visible: true,
+    button: null,
+    clicks: 0,
+  };
+  const listeners = {};
+  let notify;
+  const window = {
+    location: { origin: ORIGIN },
+    ReactNativeWebView: { postMessage() {} },
+    addEventListener: (event, callback) => {
+      listeners[event] = callback;
+    },
+  };
+  window.top = window.self = window;
+  const completed = { parentElement: { querySelector: () => state.button } };
+  const context = vm.createContext({
+    window,
+    document: {
+      documentElement: {},
+      get visibilityState() {
+        return state.visible ? 'visible' : 'hidden';
+      },
+      hasFocus: () => state.focused,
+      querySelector: (selector) =>
+        selector === '.actions #view-complete' && state.completed
+          ? completed
+          : null,
+      addEventListener: (event, callback) => {
+        listeners[event] = callback;
+      },
+    },
+    getComputedStyle: (button) => ({ visibility: button.visibility }),
+    MutationObserver: class {
+      constructor(callback) {
+        notify = callback;
+      }
+      observe() {}
+    },
+  });
+  vm.runInContext(bridge.WATCH_ADS_SCRIPT, context);
+  const nextButton = () => ({
+    disabled: false,
+    ariaDisabled: null,
+    visible: true,
+    visibility: 'visible',
+    textContent: 'もっと見る',
+    getAttribute(name) {
+      return name === 'aria-disabled' ? this.ariaDisabled : null;
+    },
+    getClientRects() {
+      return this.visible ? [{}] : [];
+    },
+    click() {
+      state.clicks++;
+    },
+  });
+  return { state, notify, listeners, nextButton };
+}
+
+test('More is clicked only after the site confirms the countdown and enables the button', () => {
+  const h = createAdPageHarness();
+  h.state.button = h.nextButton();
+  h.notify();
+  assert.equal(
+    h.state.clicks,
+    0,
+    'An uncompleted or non-reward ad must not auto-advance'
+  );
+  h.state.completed = true;
+  h.state.button.disabled = true;
+  h.notify();
+  assert.equal(
+    h.state.clicks,
+    0,
+    'Wait for the site to finish confirming the view'
+  );
+  h.state.button.disabled = false;
+  h.notify();
+  assert.equal(h.state.clicks, 1);
+  h.notify();
+  h.listeners.focus();
+  assert.equal(h.state.clicks, 1, 'Click each completed ad only once');
+  h.state.completed = false;
+  h.state.button = h.nextButton();
+  h.notify();
+  assert.equal(h.state.clicks, 1, 'Wait for the next ad to finish too');
+  h.state.completed = true;
+  h.notify();
+  assert.equal(h.state.clicks, 2);
+});
+
+test('completed ads only advance while the page is visible and focused', () => {
+  const h = createAdPageHarness();
+  h.state.button = h.nextButton();
+  h.state.completed = true;
+  h.state.visible = false;
+  h.notify();
+  assert.equal(h.state.clicks, 0);
+  h.state.focused = false;
+  h.state.visible = true;
+  h.listeners.visibilitychange();
+  assert.equal(h.state.clicks, 0);
+  h.state.focused = true;
+  h.listeners.focus();
+  assert.equal(h.state.clicks, 1);
+});
+
+test('auto-advance ignores hidden buttons, other labels, and disabled accessibility states', () => {
+  const h = createAdPageHarness();
+  h.state.completed = true;
+  h.state.button = h.nextButton();
+  h.state.button.textContent = '受け取る';
+  h.notify();
+  assert.equal(
+    h.state.clicks,
+    0,
+    'Leave receiving and withdrawal actions to the user'
+  );
+  h.state.button.textContent = 'もっと見る';
+  h.state.button.ariaDisabled = 'true';
+  h.notify();
+  assert.equal(h.state.clicks, 0);
+  h.state.button.ariaDisabled = null;
+  h.state.button.visible = false;
+  h.notify();
+  assert.equal(h.state.clicks, 0);
+  h.state.button.visible = true;
+  h.state.button.visibility = 'hidden';
+  h.notify();
+  assert.equal(h.state.clicks, 0);
+  h.state.button.visibility = 'visible';
+  h.notify();
+  assert.equal(h.state.clicks, 1);
 });
 
 test('bridge messages from other origins and malformed messages are ignored', () => {

@@ -2,11 +2,12 @@ export const WATCH_ADS_URL = 'https://ads.example';
 
 const MESSAGE_TYPE = 'kashir:ad-lnurl';
 
-export const WATCH_ADS_LNURL_SCRIPT = `
+export const WATCH_ADS_SCRIPT = `
 (function () {
   if (window.top !== window.self || window.location.origin !== ${JSON.stringify(WATCH_ADS_URL)}) return;
   if (window.__kashirWatchAdsObserver) return;
   var previous;
+  var advancedButtons = new WeakSet();
   function reportLnurl() {
     var link = document.querySelector('#payout .wallet-open[href]');
     var match = link && /^lightning:(lnurl1[0-9a-z]+)$/i.exec(link.getAttribute('href') || '');
@@ -15,11 +16,28 @@ export const WATCH_ADS_LNURL_SCRIPT = `
     previous = lnurl;
     window.ReactNativeWebView.postMessage(JSON.stringify({ type: ${JSON.stringify(MESSAGE_TYPE)}, lnurl: lnurl }));
   }
-  window.__kashirWatchAdsObserver = new MutationObserver(reportLnurl);
+  function advanceCompletedAd() {
+    if (document.visibilityState !== 'visible' || !document.hasFocus()) return;
+    var completed = document.querySelector('.actions #view-complete');
+    var button = completed && completed.parentElement.querySelector('button#next-view');
+    if (!button || button.disabled || button.getAttribute('aria-disabled') === 'true') return;
+    if (button.textContent.trim() !== 'もっと見る' || !button.getClientRects().length) return;
+    if (getComputedStyle(button).visibility !== 'visible' || advancedButtons.has(button)) return;
+    advancedButtons.add(button);
+    button.click();
+  }
+  function updatePage() {
+    reportLnurl();
+    advanceCompletedAd();
+  }
+  window.__kashirWatchAdsObserver = new MutationObserver(updatePage);
   window.__kashirWatchAdsObserver.observe(document.documentElement, {
-    childList: true, subtree: true, attributes: true, attributeFilter: ['href']
+    childList: true, subtree: true, characterData: true, attributes: true,
+    attributeFilter: ['href', 'disabled', 'aria-disabled', 'hidden', 'class', 'style']
   });
-  reportLnurl();
+  document.addEventListener('visibilitychange', updatePage);
+  window.addEventListener('focus', updatePage);
+  updatePage();
 })();
 true;
 `;

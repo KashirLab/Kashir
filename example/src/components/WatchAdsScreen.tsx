@@ -13,7 +13,7 @@ import { withdrawAdReward } from '../services/AdWithdrawalService';
 import { getErrorMessage } from './wallet/utils/errorUtils';
 import {
   WATCH_ADS_URL,
-  WATCH_ADS_LNURL_SCRIPT,
+  WATCH_ADS_SCRIPT,
   parseWatchAdsMessage,
 } from './watchAdsBridge';
 
@@ -136,7 +136,7 @@ export function WatchAdsScreen() {
             'about:srcdoc',
             'lightning:*',
           ]}
-          injectedJavaScript={WATCH_ADS_LNURL_SCRIPT}
+          injectedJavaScript={WATCH_ADS_SCRIPT}
           onMessage={({ nativeEvent }) => {
             const message = parseWatchAdsMessage(
               nativeEvent.url,
