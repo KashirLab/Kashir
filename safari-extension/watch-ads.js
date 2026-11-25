@@ -5,6 +5,14 @@
   const initializedPayouts = new WeakSet();
   const attemptedRewards = new Set();
   let redeemingReward = false;
+  const nextAdLabel = '次の広告を見る';
+  const scrollKey = 'kashir:scroll-after-next-ad';
+  let scrollDeadline = 0;
+  try {
+    scrollDeadline = Number(window.sessionStorage.getItem(scrollKey));
+  } catch {
+    // Scrolling still works within the same document if storage is unavailable.
+  }
 
   let screenLock;
   let requestingScreenLock = false;
@@ -41,6 +49,34 @@
     if (tab.getAttribute('aria-selected') !== 'true') tab.click();
   }
 
+  function payoutNextAdControls() {
+    return Array.from(
+      document.querySelectorAll('#payout button.primary, #payout a[href="/"]')
+    ).filter((control) => control.textContent.trim() === nextAdLabel);
+  }
+
+  function scrollAfterNextAd() {
+    if (!scrollDeadline || document.visibilityState !== 'visible') return;
+    const expired = Date.now() > scrollDeadline;
+    if (
+      !expired &&
+      payoutNextAdControls().some((control) => control.getClientRects().length)
+    )
+      return;
+
+    scrollDeadline = 0;
+    try {
+      window.sessionStorage.removeItem(scrollKey);
+    } catch {
+      // Storage is optional for navigation within the same document.
+    }
+    if (expired) return;
+
+    window.requestAnimationFrame(() => {
+      window.scrollTo(0, document.scrollingElement.scrollHeight);
+    });
+  }
+
   function clickNextAd(button, label) {
     if (
       !button ||
@@ -55,6 +91,14 @@
     }
 
     advancedButtons.add(button);
+    if (label === nextAdLabel) {
+      scrollDeadline = Date.now() + 30_000;
+      try {
+        window.sessionStorage.setItem(scrollKey, String(scrollDeadline));
+      } catch {
+        // Scrolling still works within the same document.
+      }
+    }
     button.click();
     return true;
   }
@@ -65,9 +109,7 @@
     const completed = document.querySelector('.actions #view-complete');
     const button = completed?.parentElement?.querySelector('button#next-view');
     if (clickNextAd(button, 'もっと見る') || redeemingReward) return;
-    Array.from(
-      document.querySelectorAll('#payout button.primary, #payout a[href="/"]')
-    ).some((control) => clickNextAd(control, '次の広告を見る'));
+    payoutNextAdControls().some((control) => clickNextAd(control, nextAdLabel));
   }
 
   async function redeemReward() {
@@ -125,6 +167,7 @@
     selectLnurlTab();
     redeemReward();
     advanceCompletedAd();
+    scrollAfterNextAd();
   }
 
   window.__kashirSafariWatchAdsObserver = new MutationObserver(updatePage);

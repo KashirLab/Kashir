@@ -28,11 +28,41 @@ export const WATCH_ADS_SCRIPT = `
     previous = lnurl;
     window.ReactNativeWebView.postMessage(JSON.stringify({ type: ${JSON.stringify(MESSAGE_TYPE)}, lnurl: lnurl }));
   }
+  var nextAdLabel = '次の広告を見る';
+  var scrollKey = 'kashir:scroll-after-next-ad';
+  var scrollDeadline = 0;
+  try {
+    scrollDeadline = Number(window.sessionStorage.getItem(scrollKey));
+  } catch {}
+  function payoutNextAdControls() {
+    return Array.from(document.querySelectorAll('#payout button.primary, #payout a[href="/"]')).filter(function (control) {
+      return control.textContent.trim() === nextAdLabel;
+    });
+  }
+  function scrollAfterNextAd() {
+    if (!scrollDeadline || document.visibilityState !== 'visible') return;
+    var expired = Date.now() > scrollDeadline;
+    if (!expired && payoutNextAdControls().some(function (control) { return control.getClientRects().length; })) return;
+    scrollDeadline = 0;
+    try {
+      window.sessionStorage.removeItem(scrollKey);
+    } catch {}
+    if (expired) return;
+    window.requestAnimationFrame(function () {
+      window.scrollTo(0, document.scrollingElement.scrollHeight);
+    });
+  }
   function clickNextAd(button, label) {
     if (!button || button.disabled || button.getAttribute('aria-disabled') === 'true') return false;
     if (button.textContent.trim() !== label || !button.getClientRects().length) return false;
     if (getComputedStyle(button).visibility !== 'visible' || advancedButtons.has(button)) return false;
     advancedButtons.add(button);
+    if (label === nextAdLabel) {
+      scrollDeadline = Date.now() + 30000;
+      try {
+        window.sessionStorage.setItem(scrollKey, String(scrollDeadline));
+      } catch {}
+    }
     button.click();
     return true;
   }
@@ -41,14 +71,15 @@ export const WATCH_ADS_SCRIPT = `
     var completed = document.querySelector('.actions #view-complete');
     var button = completed && completed.parentElement.querySelector('button#next-view');
     if (clickNextAd(button, 'もっと見る')) return;
-    Array.from(document.querySelectorAll('#payout button.primary, #payout a[href="/"]')).some(function (control) {
-      return clickNextAd(control, '次の広告を見る');
+    payoutNextAdControls().some(function (control) {
+      return clickNextAd(control, nextAdLabel);
     });
   }
   function updatePage() {
     selectLnurlTab();
     reportLnurl();
     advanceCompletedAd();
+    scrollAfterNextAd();
   }
   window.__kashirWatchAdsObserver = new MutationObserver(updatePage);
   window.__kashirWatchAdsObserver.observe(document.documentElement, {

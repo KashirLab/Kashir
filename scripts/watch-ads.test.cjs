@@ -221,11 +221,14 @@ function createAdPageHarness() {
     visible: true,
     button: null,
     clicks: 0,
+    scrolls: [],
   };
   const listeners = {};
   let notify;
   const window = {
     location: { origin: ORIGIN },
+    requestAnimationFrame: (callback) => callback(),
+    scrollTo: (x, y) => state.scrolls.push([x, y]),
     ReactNativeWebView: { postMessage() {} },
     addEventListener: (event, callback) => {
       listeners[event] = callback;
@@ -237,6 +240,7 @@ function createAdPageHarness() {
     window,
     document: {
       documentElement: {},
+      scrollingElement: { scrollHeight: 800 },
       get visibilityState() {
         return state.visible ? 'visible' : 'hidden';
       },
@@ -372,6 +376,12 @@ test('advances once from the completed payout screen', () => {
   h.notify();
   h.notify();
   assert.equal(h.state.clicks, 1);
+  assert.deepEqual(h.state.scrolls, []);
+
+  h.state.payoutControls = [];
+  h.notify();
+  h.notify();
+  assert.deepEqual(h.state.scrolls, [[0, 800]]);
 });
 
 test('auto-advance ignores hidden buttons, other labels, and disabled accessibility states', () => {
