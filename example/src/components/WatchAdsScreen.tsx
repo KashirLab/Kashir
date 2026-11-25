@@ -2,6 +2,7 @@ import React, { useEffect, useRef, useState } from 'react';
 import {
   ActivityIndicator,
   AppState,
+  NativeModules,
   StyleSheet,
   Text,
   TouchableOpacity,
@@ -32,12 +33,16 @@ export function WatchAdsScreen() {
 
   useEffect(() => {
     mounted.current = true;
+    const screenAwake = NativeModules?.WatchAdsScreenAwake;
+    screenAwake?.setEnabled(AppState.currentState === 'active');
     const subscription = AppState.addEventListener('change', (state) => {
+      screenAwake?.setEnabled(state === 'active');
       if (state === 'active') webView.current?.requestFocus();
     });
     return () => {
       mounted.current = false;
       subscription.remove();
+      screenAwake?.setEnabled(false);
     };
   }, []);
 

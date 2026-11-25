@@ -433,6 +433,7 @@ test('a trusted payout LNURL starts one automatic withdrawal and errors can be r
   let finish;
   let rejectPayment;
   let appStateChanged;
+  const screenAwakeStates = [];
   const react = {
     createElement: (type, props, ...children) => ({
       type,
@@ -466,6 +467,7 @@ test('a trusted payout LNURL starts one automatic withdrawal and errors can be r
       'react-native': {
         ActivityIndicator: 'ActivityIndicator',
         AppState: {
+          currentState: 'active',
           addEventListener(event, callback) {
             assert.equal(event, 'change');
             appStateChanged = callback;
@@ -474,6 +476,11 @@ test('a trusted payout LNURL starts one automatic withdrawal and errors can be r
                 appStateChanged = undefined;
               },
             };
+          },
+        },
+        NativeModules: {
+          WatchAdsScreenAwake: {
+            setEnabled: (enabled) => screenAwakeStates.push(enabled),
           },
         },
         View: 'View',
@@ -568,6 +575,7 @@ test('a trusted payout LNURL starts one automatic withdrawal and errors can be r
   report(ORIGIN, bridgeMessage(lnurl));
   assert.equal(calls, 2);
   for (const hook of hooks) hook?.cleanup?.();
+  assert.deepEqual(screenAwakeStates, [true, false, true, false]);
   assert.equal(
     appStateChanged,
     undefined,

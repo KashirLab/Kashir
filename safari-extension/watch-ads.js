@@ -6,6 +6,23 @@
   const attemptedRewards = new Set();
   let redeemingReward = false;
 
+  let screenLock;
+  let requestingScreenLock = false;
+
+  async function keepScreenAwake() {
+    if (document.visibilityState !== 'visible' || !navigator.wakeLock) return;
+    if (requestingScreenLock || (screenLock && !screenLock.released)) return;
+
+    requestingScreenLock = true;
+    try {
+      screenLock = await navigator.wakeLock.request('screen');
+    } catch {
+      // Safari can deny wake locks based on device or page state.
+    } finally {
+      requestingScreenLock = false;
+    }
+  }
+
   function selectLnurlTab() {
     const payout = document.querySelector('#payout');
     if (!payout || initializedPayouts.has(payout)) return;
@@ -118,6 +135,9 @@
     attributes: true,
     attributeFilter: ['disabled', 'aria-disabled', 'hidden', 'class', 'style'],
   });
+  document.addEventListener('visibilitychange', keepScreenAwake);
+  window.addEventListener('pageshow', keepScreenAwake);
+  keepScreenAwake();
   document.addEventListener('visibilitychange', updatePage);
   window.addEventListener('focus', updatePage);
   updatePage();
