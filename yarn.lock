@@ -3831,6 +3831,13 @@ __metadata:
   languageName: node
   linkType: hard
 
+"bech32@npm:^2.0.0":
+  version: 2.0.0
+  resolution: "bech32@npm:2.0.0"
+  checksum: fa15acb270b59aa496734a01f9155677b478987b773bf701f465858bf1606c6a970085babd43d71ce61895f1baa594cb41a2cd1394bd2c6698f03cc2d811300e
+  languageName: node
+  linkType: hard
+
 "before-after-hook@npm:^2.2.0":
   version: 2.2.3
   resolution: "before-after-hook@npm:2.2.3"
@@ -7931,6 +7938,7 @@ __metadata:
     "@react-native/metro-config": 0.88.1
     "@react-native/typescript-config": 0.88.1
     "@types/react": ^19.2.0
+    bech32: ^2.0.0
     react: 19.3.0
     react-native: 0.88.1
     react-native-builder-bob: ^0.38.3

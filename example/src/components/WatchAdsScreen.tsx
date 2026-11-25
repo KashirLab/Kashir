@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import {
   ActivityIndicator,
   StyleSheet,
@@ -8,17 +8,106 @@ import {
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { WebView } from 'react-native-webview';
+import { withdrawAdReward } from '../services/AdWithdrawalService';
+import { getErrorMessage } from './wallet/utils/errorUtils';
+import {
+  WATCH_ADS_URL,
+  WATCH_ADS_LNURL_SCRIPT,
+  parseWatchAdsMessage,
+} from './watchAdsBridge';
 
-const WATCH_ADS_URL = 'https://ads.example';
+interface WithdrawalStatus {
+  lnurl: string;
+  state: 'pending' | 'success' | 'error';
+  message: string;
+}
 
 export function WatchAdsScreen() {
   const [hasError, setHasError] = useState(false);
+  const [lnurl, setLnurl] = useState<string | null>(null);
+  const [withdrawal, setWithdrawal] = useState<WithdrawalStatus | null>(null);
+  const withdrawing = useRef(false);
+  const mounted = useRef(true);
+  const targetLnurl =
+    lnurl || (withdrawal?.state === 'error' ? withdrawal.lnurl : null);
+  const isWithdrawing = withdrawal?.state === 'pending';
+  const isReceived =
+    withdrawal?.state === 'success' && withdrawal.lnurl === targetLnurl;
+
+  useEffect(() => {
+    mounted.current = true;
+    return () => {
+      mounted.current = false;
+    };
+  }, []);
+
+  const handleWithdraw = async () => {
+    if (!targetLnurl || withdrawing.current || isReceived) return;
+    withdrawing.current = true;
+    setWithdrawal({
+      lnurl: targetLnurl,
+      state: 'pending',
+      message: 'Receiving your reward into your Cashu wallet...',
+    });
+    try {
+      const amount = await withdrawAdReward(targetLnurl);
+      if (mounted.current)
+        setWithdrawal({
+          lnurl: targetLnurl,
+          state: 'success',
+          message: `Received ${amount} sats in your Cashu wallet.`,
+        });
+    } catch (error) {
+      if (mounted.current)
+        setWithdrawal({
+          lnurl: targetLnurl,
+          state: 'error',
+          message: getErrorMessage(error),
+        });
+    } finally {
+      withdrawing.current = false;
+    }
+  };
 
   return (
     <SafeAreaView style={styles.container} edges={['top', 'left', 'right']}>
       <View style={styles.header}>
         <Text style={styles.headerTitle}>Watch Ads</Text>
+        <TouchableOpacity
+          accessibilityRole="button"
+          accessibilityLabel="Withdraw ad rewards to your Cashu wallet"
+          accessibilityState={{
+            disabled: !targetLnurl || isWithdrawing || isReceived,
+            busy: isWithdrawing,
+          }}
+          disabled={!targetLnurl || isWithdrawing || isReceived}
+          style={[
+            styles.withdrawButton,
+            (!targetLnurl || isWithdrawing || isReceived) &&
+              styles.disabledButton,
+          ]}
+          onPress={handleWithdraw}
+        >
+          {isWithdrawing ? (
+            <ActivityIndicator size="small" color="#fff" />
+          ) : (
+            <Text style={styles.retryText}>
+              {isReceived ? 'Received' : 'Withdraw'}
+            </Text>
+          )}
+        </TouchableOpacity>
       </View>
+      {withdrawal && (
+        <Text
+          accessibilityLiveRegion="polite"
+          style={[
+            styles.withdrawalMessage,
+            withdrawal.state === 'error' && styles.withdrawalError,
+          ]}
+        >
+          {withdrawal.message}
+        </Text>
+      )}
       {hasError ? (
         <View style={styles.messageContainer}>
           <Text style={styles.message}>Unable to load ads.</Text>
@@ -34,7 +123,22 @@ export function WatchAdsScreen() {
         <WebView
           style={styles.webView}
           source={{ uri: WATCH_ADS_URL }}
-          originWhitelist={['http://*', 'https://*', 'about:srcdoc']}
+          originWhitelist={[
+            'http://*',
+            'https://*',
+            'about:srcdoc',
+            'lightning:*',
+          ]}
+          injectedJavaScript={WATCH_ADS_LNURL_SCRIPT}
+          onMessage={({ nativeEvent }) => {
+            const message = parseWatchAdsMessage(
+              nativeEvent.url,
+              nativeEvent.data
+            );
+            if (message) setLnurl(message.lnurl);
+          }}
+          onLoadStart={() => setLnurl(null)}
+          onShouldStartLoadWithRequest={({ url }) => !/^lightning:/i.test(url)}
           domStorageEnabled
           allowsInlineMediaPlayback
           startInLoadingState
@@ -58,6 +162,9 @@ const styles = StyleSheet.create({
     backgroundColor: '#1a1a1a',
   },
   header: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
     padding: 20,
     borderBottomWidth: 1,
     borderBottomColor: '#444',
@@ -67,6 +174,22 @@ const styles = StyleSheet.create({
     fontWeight: 'bold',
     color: '#fff',
   },
+  withdrawButton: {
+    paddingHorizontal: 16,
+    paddingVertical: 10,
+    borderRadius: 8,
+    backgroundColor: '#0070d6',
+    minWidth: 104,
+    alignItems: 'center',
+  },
+  disabledButton: { opacity: 0.5 },
+  withdrawalMessage: {
+    paddingHorizontal: 20,
+    paddingVertical: 12,
+    color: '#ccc',
+    fontSize: 14,
+  },
+  withdrawalError: { color: '#ff6b6b' },
   webView: {
     flex: 1,
     backgroundColor: '#1a1a1a',

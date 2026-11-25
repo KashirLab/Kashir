@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { StatusBar, StyleSheet, View } from 'react-native';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { BottomTabNavigation } from './components/BottomTabNavigation';
@@ -6,10 +6,21 @@ import type { MainTabType } from './components/BottomTabNavigation';
 import { SettingsScreen } from './components/SettingsScreen';
 import { WalletScreen } from './components/WalletScreen';
 import { WatchAdsScreen } from './components/WatchAdsScreen';
+import { resumePendingAdWithdrawals } from './services/AdWithdrawalService';
+import { walletManager } from './services/WalletManager';
 
 export default function App() {
   const [activeTab, setActiveTab] = useState<MainTabType>('wallet');
   const settingsVisible = activeTab === 'settings';
+
+  useEffect(() => {
+    const resumeWithdrawals = () => {
+      resumePendingAdWithdrawals();
+    };
+    const unsubscribe = walletManager.subscribe(resumeWithdrawals);
+    resumeWithdrawals();
+    return unsubscribe;
+  }, []);
 
   return (
     <SafeAreaProvider style={styles.container}>

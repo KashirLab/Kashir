@@ -14,6 +14,7 @@ export class WalletManager {
   private mintUrls: string[] = [];
   private activeMintUrl: string = '';
   private isLoadingWallet: boolean = false;
+  private balanceRevision: number = 0;
 
   // Event listeners for state changes
   private listeners: Set<() => void> = new Set();
@@ -72,6 +73,11 @@ export class WalletManager {
     return this.isLoadingWallet;
   }
 
+  notifyBalanceChanged(): void {
+    this.balanceRevision += 1;
+    this.notifyListeners();
+  }
+
   // Wallet operations are now handled in useWallet hook
   // This maintains single responsibility and leverages MultiMintWallet's native methods
 
@@ -105,6 +111,7 @@ export class WalletManager {
       mintUrls: [...this.mintUrls],
       activeMintUrl: this.activeMintUrl,
       isLoadingWallet: this.isLoadingWallet,
+      balanceRevision: this.balanceRevision,
       hasWallet: this.hasWallet(),
     };
   }

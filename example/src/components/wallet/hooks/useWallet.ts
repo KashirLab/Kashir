@@ -95,8 +95,13 @@ export function useWallet() {
   }, []);
 
   // Extract values from WalletManager
-  const { multiMintWallet, mintUrls, activeMintUrl, isLoadingWallet } =
-    managerState;
+  const {
+    multiMintWallet,
+    mintUrls,
+    activeMintUrl,
+    isLoadingWallet,
+    balanceRevision,
+  } = managerState;
 
   // ============================================================================
   // STORAGE HELPERS
@@ -1155,7 +1160,7 @@ export function useWallet() {
     if (multiMintWallet && activeMintUrl) {
       updateBalance();
     }
-  }, [multiMintWallet, activeMintUrl, updateBalance]);
+  }, [multiMintWallet, activeMintUrl, balanceRevision, updateBalance]);
 
   // Cleanup on unmount
   useEffect(() => {
