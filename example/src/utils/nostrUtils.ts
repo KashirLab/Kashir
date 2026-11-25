@@ -349,35 +349,31 @@ export async function fetchEmbeddedPosts(
           15000
         );
 
-        if (responseEvents) {
-          const eventsArray = responseEvents.toVec();
+        if (responseEvents.length === 1) {
+          const event = responseEvents[0];
+          if (event) {
+            try {
+              const eventId = event.id().toHex();
+              const authorHex = event.author().toHex();
 
-          if (eventsArray.length === 1) {
-            const event = eventsArray[0];
-            if (event) {
-              try {
-                const eventId = event.id().toHex();
-                const authorHex = event.author().toHex();
+              // Check if stats are already cached from the batch request
+              const cachedStats = cacheService.getEmbeddedStats(eventId);
 
-                // Check if stats are already cached from the batch request
-                const cachedStats = cacheService.getEmbeddedStats(eventId);
-
-                const postData = {
-                  event: {
-                    id: eventId,
-                    content: event.content(),
-                    created_at: Number(event.createdAt().asSecs()),
-                    pubkey: authorHex,
-                    kind: Number(event.kind()),
-                  },
-                  stats: cachedStats, // Use cached stats if available
-                  originalEvent: event,
-                  isLoadingStats: !cachedStats, // Not loading if we have cached stats
-                };
-                embeddedPosts.set(eventId, postData);
-              } catch (error) {
-                console.error('Error processing embedded post:', error);
-              }
+              const postData = {
+                event: {
+                  id: eventId,
+                  content: event.content(),
+                  created_at: Number(event.createdAt().asSecs()),
+                  pubkey: authorHex,
+                  kind: event.kind().asU16(),
+                },
+                stats: cachedStats, // Use cached stats if available
+                originalEvent: event,
+                isLoadingStats: !cachedStats, // Not loading if we have cached stats
+              };
+              embeddedPosts.set(eventId, postData);
+            } catch (error) {
+              console.error('Error processing embedded post:', error);
             }
           }
         }

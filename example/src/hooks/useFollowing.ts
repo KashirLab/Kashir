@@ -125,18 +125,17 @@ export function useFollowing(
           ReqTarget.auto([followingFilter]),
           30000
         );
-        const eventArray = events.toVec();
 
-        if (eventArray.length > 0) {
+        if (events.length > 0) {
           // Sort by timestamp
-          eventArray.sort((a, b) => {
+          events.sort((a, b) => {
             const timeA = a.createdAt().asSecs();
             const timeB = b.createdAt().asSecs();
             return Number(timeB - timeA);
           });
 
           // Convert EventInterface to PostWithStats format
-          const postsWithStats: PostWithStats[] = eventArray.map((event) => ({
+          const postsWithStats: PostWithStats[] = events.map((event) => ({
             event: {
               id: event.id().toHex(),
               pubkey: event.author().toHex(),

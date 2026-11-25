@@ -34,10 +34,9 @@ export class ProfileService {
         ReqTarget.auto([profileFilter]),
         10000
       );
-      const eventArray = events.toVec();
 
-      if (eventArray.length > 0) {
-        const profileEvent = eventArray[0];
+      if (events.length > 0) {
+        const profileEvent = events[0];
         if (profileEvent) {
           const content = profileEvent.content();
 
@@ -125,10 +124,9 @@ export class ProfileService {
         ReqTarget.auto([profileFilter]),
         10000
       );
-      const eventArray = events.toVec();
 
-      if (eventArray.length > 0) {
-        const profileEvent = eventArray[0];
+      if (events.length > 0) {
+        const profileEvent = events[0];
         if (profileEvent) {
           const content = profileEvent.content();
 

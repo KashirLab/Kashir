@@ -77,10 +77,9 @@ export class ListService {
           ReqTarget.auto([contactListFilter]),
           10000
         );
-        const contactEventArray = contactEvents.toVec();
 
-        if (contactEventArray.length > 0) {
-          const contactListEvent = contactEventArray[0];
+        if (contactEvents.length > 0) {
+          const contactListEvent = contactEvents[0];
           if (contactListEvent) {
             const tags = contactListEvent.tags();
             const tagArrays = tagsToArray(tags);
@@ -136,8 +135,7 @@ export class ListService {
         .limit(100n); // Get up to 100 follow sets
 
       const events = await client.fetchEvents(ReqTarget.auto([filter]), 10000);
-      const eventArray = events.toVec();
-      for (const event of eventArray) {
+      for (const event of events) {
         try {
           // Extract identifier from 'd' tag
           const tags = event.tags();

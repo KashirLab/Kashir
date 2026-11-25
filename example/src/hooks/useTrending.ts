@@ -37,59 +37,55 @@ export function useTrending(
           const parsedEventId = EventId.parse(eventId);
           const workingFilter = new Filter().id(parsedEventId).limit(BigInt(1));
 
-          const fetchedEventsResult = await clientInstance.fetchEvents(
+          const events = await clientInstance.fetchEvents(
             ReqTarget.auto([workingFilter]),
             5000
           );
 
-          if (fetchedEventsResult) {
-            const eventsArray = fetchedEventsResult.toVec();
+          if (events.length > 0) {
+            const event = events[0];
+            if (event) {
+              fetchedEvents.push(event);
+              const authorPubkey = event.author();
+              const authorHex = authorPubkey.toHex();
+              allAuthorPubkeys.add(authorHex);
 
-            if (eventsArray.length > 0) {
-              const event = eventsArray[0];
-              if (event) {
-                fetchedEvents.push(event);
-                const authorPubkey = event.author();
-                const authorHex = authorPubkey.toHex();
-                allAuthorPubkeys.add(authorHex);
+              // Create the new post
+              const eventIdHex = event.id().toHex();
+              const newPost = {
+                event: {
+                  id: eventIdHex,
+                  pubkey: authorHex,
+                  content: event.content(),
+                  created_at: Number(event.createdAt().asSecs()),
+                },
+                originalEvent: event,
+                stats: undefined,
+                isLoadingStats: true,
+                isLoadingContent: false, // Content is now loaded
+              };
 
-                // Create the new post
-                const eventIdHex = event.id().toHex();
-                const newPost = {
-                  event: {
-                    id: eventIdHex,
-                    pubkey: authorHex,
-                    content: event.content(),
-                    created_at: Number(event.createdAt().asSecs()),
-                  },
-                  originalEvent: event,
-                  stats: undefined,
-                  isLoadingStats: true,
-                  isLoadingContent: false, // Content is now loaded
-                };
+              // Fetch profiles for this specific post using reusable utility
+              await postProcessingUtils.processSinglePostProfiles(
+                clientInstance,
+                profileService,
+                newPost as any,
+                { fetchAuthorProfile: true }
+              );
 
-                // Fetch profiles for this specific post using reusable utility
-                await postProcessingUtils.processSinglePostProfiles(
-                  clientInstance,
-                  profileService,
-                  newPost as any,
-                  { fetchAuthorProfile: true }
+              // Update posts immediately with this new event (now with nprofiles and author profile loaded)
+              setTrendingPosts((currentPosts) => {
+                const updatedPosts = [...currentPosts];
+                const postIndex = updatedPosts.findIndex(
+                  (post) => post.event.id === eventId
                 );
 
-                // Update posts immediately with this new event (now with nprofiles and author profile loaded)
-                setTrendingPosts((currentPosts) => {
-                  const updatedPosts = [...currentPosts];
-                  const postIndex = updatedPosts.findIndex(
-                    (post) => post.event.id === eventId
-                  );
+                if (postIndex !== -1) {
+                  updatedPosts[postIndex] = newPost;
+                }
 
-                  if (postIndex !== -1) {
-                    updatedPosts[postIndex] = newPost;
-                  }
-
-                  return updatedPosts;
-                });
-              }
+                return updatedPosts;
+              });
             }
           }
         } catch (error) {

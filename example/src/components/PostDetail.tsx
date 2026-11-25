@@ -81,11 +81,10 @@ export function PostDetail({
           .events([eventIdObj]) // Find events with 'e' tags referencing this post
           .limit(1000n); // Allow for many replies
 
-        const events = await client.fetchEvents(
+        replyEvents = await client.fetchEvents(
           ReqTarget.auto([replyFilter]),
           20000
         );
-        replyEvents = events.toVec();
       } catch (filterError) {
         console.error(
           'Failed to fetch replies using Filter.events():',

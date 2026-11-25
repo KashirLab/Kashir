@@ -3,6 +3,7 @@ import uuid from 'react-native-uuid';
 import { NostrClientService, LoginType } from './NostrClient';
 import { ProfileService } from './ProfileService';
 import { LNURLService } from './LNURLService';
+import { tagsToArray } from './NostrUtils';
 import type { EventInterface } from 'kashir';
 import type { CalendarEventData, CalendarData } from '../types';
 import { getNostrKeys } from '../utils/nostrUtils';
@@ -268,10 +269,7 @@ export class PostActionService {
         pubkey: zapRequestEvent.author().toHex(),
         created_at: Number(zapRequestEvent.createdAt().asSecs()),
         kind: zapRequestEvent.kind().asU16(),
-        tags: zapRequestEvent
-          .tags()
-          .toVec()
-          .map((tag) => tag.asVec()),
+        tags: tagsToArray(zapRequestEvent.tags()),
         content: zapRequestEvent.content(),
         sig: zapRequestEvent.signature(),
       });

@@ -64,13 +64,12 @@ export class MintRecommendationService {
       const filter = new Filter().kinds([new Kind(38000)]).limit(2000n);
 
       const events = await client.fetchEvents(ReqTarget.auto([filter]), 30000);
-      const eventArray = events.toVec();
 
       const mintUrls: string[] = [];
       const mintComments = new Map<string, MintComment[]>();
 
       // Process events to extract mint URLs AND collect comments
-      for (const event of eventArray) {
+      for (const event of events) {
         try {
           const tags = event.tags();
           const tagArrays = tagsToArray(tags);

@@ -28,25 +28,15 @@ export class DVMService {
         .author(dvmPubkey)
         .limit(BigInt(50));
 
-      let responseEvents = await client.fetchEvents(
+      const events = await client.fetchEvents(
         ReqTarget.auto([dvmFilter]),
         15000
       );
 
-      // Convert EventsInterface to array using toVec() method
-      let eventsArray: EventInterface[] = [];
-      if (responseEvents) {
-        try {
-          eventsArray = responseEvents.toVec();
-        } catch {
-          eventsArray = [];
-        }
-      }
-
       // Process any found events
-      if (eventsArray.length > 0) {
-        for (let i = 0; i < Math.min(eventsArray.length, 3); i++) {
-          const response = eventsArray[i];
+      if (events.length > 0) {
+        for (let i = 0; i < Math.min(events.length, 3); i++) {
+          const response = events[i];
           if (response) {
             if (response.content().length > 0) {
               try {
@@ -107,67 +97,17 @@ export class DVMService {
 
         try {
           const parsedEventId = EventId.parse(eventId);
-          let foundEvent = null;
-
-          // Use METHOD CHAINING - this is the key to success!
           const workingFilter = new Filter().id(parsedEventId).limit(BigInt(1));
 
-          const fetchedEvents = await client.fetchEvents(
+          const events = await client.fetchEvents(
             ReqTarget.auto([workingFilter]),
             5000
           );
 
-          if (fetchedEvents) {
-            const eventsArray = fetchedEvents.toVec();
-
-            if (eventsArray.length === 1) {
-              const event = eventsArray[0];
-              if (event) {
-                const returnedIdStr = event.id().toString();
-
-                // Use hex extraction for proper comparison
-                let isCorrectEvent = returnedIdStr === eventId;
-                if (!isCorrectEvent) {
-                  const hexMatch = returnedIdStr.match(
-                    /EventId\(([a-f0-9]{64})\)/
-                  );
-                  if (hexMatch) {
-                    isCorrectEvent = hexMatch[1] === eventId;
-                  }
-                }
-
-                if (isCorrectEvent) {
-                  foundEvent = event;
-                }
-              }
-            } else if (eventsArray.length > 1) {
-              // Try client-side filtering as fallback
-              const matchingEvent = eventsArray.find((event) => {
-                const returnedIdStr = event.id().toString();
-
-                // Try direct comparison first
-                if (returnedIdStr === eventId) {
-                  return true;
-                }
-
-                // Try extracting hex from the debug format
-                const hexMatch = returnedIdStr.match(
-                  /EventId\(([a-f0-9]{64})\)/
-                );
-                if (hexMatch) {
-                  const extractedHex = hexMatch[1];
-                  return extractedHex === eventId;
-                }
-
-                return false;
-              });
-
-              if (matchingEvent) {
-                foundEvent = matchingEvent;
-              }
-            }
-          }
-
+          const eventIdHex = parsedEventId.toHex();
+          const foundEvent = events.find(
+            (event) => event.id().toHex() === eventIdHex
+          );
           if (foundEvent) {
             allFetchedEvents.push(foundEvent);
           }

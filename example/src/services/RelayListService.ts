@@ -55,17 +55,16 @@ export class RelayListService {
 
       // Query relays for the user's relay list
       const events = await client.fetchEvents(ReqTarget.auto([filter]), 10000); // 10 second timeout (ms)
-      const eventArray = events.toVec();
 
-      console.log(`RelayListService: Received ${eventArray.length} events`);
+      console.log(`RelayListService: Received ${events.length} events`);
 
-      if (eventArray.length === 0) {
+      if (events.length === 0) {
         console.log('RelayListService: No relay list found for user');
         return [];
       }
 
       // Get the most recent relay list event
-      const relayListEvent = eventArray[0];
+      const relayListEvent = events[0];
       if (!relayListEvent) {
         console.log('RelayListService: No valid relay list event found');
         return [];

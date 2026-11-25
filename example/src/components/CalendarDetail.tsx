@@ -95,11 +95,9 @@ export function CalendarDetail({ route, navigation }: CalendarDetailProps) {
               ReqTarget.auto([filter]),
               10000
             );
-            if (responseEvents) {
-              const eventsArray = responseEvents.toVec();
-
+            if (responseEvents.length > 0) {
               // Filter events by dTags we're looking for
-              const filteredEvents = eventsArray.filter((event) => {
+              const filteredEvents = responseEvents.filter((event) => {
                 const tags = tagsToArray(event.tags());
                 const eventDTag = tags.find((tag) => tag[0] === 'd')?.[1];
                 const eventId = event.id().toHex();
@@ -143,7 +141,7 @@ export function CalendarDetail({ route, navigation }: CalendarDetailProps) {
           return {
             id: event.id().toHex(),
             pubkey: event.author().toHex(),
-            kind: Number(event.kind()),
+            kind: event.kind().asU16(),
             content: event.content(),
             tags: tags,
             created_at: Number(event.createdAt().asSecs()),

@@ -155,12 +155,11 @@ export class FollowSetProfileService {
         ReqTarget.auto([profileFilter]),
         15000
       );
-      const eventArray = events.toVec();
 
       // Process events and extract profiles
       const profileMap = new Map<string, StoredUser>();
 
-      eventArray.forEach((event) => {
+      events.forEach((event) => {
         if (!event) return;
 
         try {

@@ -38,36 +38,17 @@ export function usePosts(client: Client | null) {
 
         let allEvents: EventInterface[] = [];
 
+        const target = ReqTarget.auto([filter]);
+        const timeoutMs = 30000;
         try {
-          // Try with milliseconds as integer
-          const timeoutMs = 30000; // 30 seconds in milliseconds
-          const events = await client.fetchEvents(
-            ReqTarget.auto([filter]),
-            timeoutMs
-          );
-
-          const eventArray = events.toVec();
-
-          if (eventArray.length > 0) {
-            allEvents = eventArray;
-          }
+          allEvents = await client.fetchEvents(target, timeoutMs);
         } catch (fetchError) {
           console.error('Error during fetch:', fetchError);
 
-          // Try alternative approaches
           try {
-            const duration = { secs: 30n, nanos: 0 };
-            const events2 = await client.fetchEvents(
-              ReqTarget.auto([filter]),
-              duration
-            );
-            const eventArray2 = events2.toVec();
-
-            if (eventArray2.length > 0) {
-              allEvents = eventArray2;
-            }
-          } catch (fetchError2) {
-            console.error('Error during second fetch attempt:', fetchError2);
+            allEvents = await client.fetchEvents(target, timeoutMs);
+          } catch (retryError) {
+            console.error('Error during second fetch attempt:', retryError);
           }
         }
 

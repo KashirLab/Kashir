@@ -6,7 +6,6 @@ import {
   NostrPublicKey as PublicKey,
   ReqTarget,
 } from 'kashir';
-import type { EventInterface } from 'kashir';
 import { ProfileService } from '../services/ProfileService';
 import { tagsToArray } from '../services/NostrUtils';
 
@@ -55,24 +54,13 @@ export function useEvents(
           eventsFilter = eventsFilter.author(authorPubkey);
         }
 
-        let responseEvents = await client.fetchEvents(
+        const events = await client.fetchEvents(
           ReqTarget.auto([eventsFilter]),
           15000
         );
 
-        // Convert EventsInterface to array using toVec() method
-        let eventsArray: EventInterface[] = [];
-        if (responseEvents) {
-          try {
-            eventsArray = responseEvents.toVec();
-          } catch (e) {
-            console.error('Error converting events to array:', e);
-            eventsArray = [];
-          }
-        }
-
         // Process events and extract calendar data
-        const calendarEvents: CalendarEvent[] = eventsArray.map((event) => {
+        const calendarEvents: CalendarEvent[] = events.map((event) => {
           const tags = tagsToArray(event.tags());
           const title =
             tags.find((tag) => tag[0] === 'title')?.[1] || 'Untitled Event';
@@ -92,7 +80,7 @@ export function useEvents(
           return {
             id: event.id().toHex(),
             pubkey: event.author().toHex(),
-            kind: Number(event.kind()),
+            kind: event.kind().asU16(),
             content: event.content(),
             tags: tags,
             created_at: Number(event.createdAt().asSecs()),
