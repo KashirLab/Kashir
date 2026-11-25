@@ -3,6 +3,7 @@ import { View, TouchableOpacity, Text, StyleSheet } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 const tabs = [
   { id: 'wallet', label: 'Wallet' },
+  { id: 'watchAds', label: 'Watch Ads' },
   { id: 'settings', label: 'Settings' },
 ] as const;
 
