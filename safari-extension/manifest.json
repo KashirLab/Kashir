@@ -1,0 +1,13 @@
+{
+  "manifest_version": 3,
+  "name": "Kashir",
+  "version": "1.0.0",
+  "icons": { "512": "icon-512.png" },
+  "content_scripts": [
+    {
+      "matches": ["https://ads.example/*"],
+      "js": ["next-ad.js"],
+      "run_at": "document_idle"
+    }
+  ]
+}
