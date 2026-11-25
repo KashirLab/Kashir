@@ -8,6 +8,15 @@ export const WATCH_ADS_SCRIPT = `
   if (window.__kashirWatchAdsObserver) return;
   var previous;
   var advancedButtons = new WeakSet();
+  var initializedPayouts = new WeakSet();
+  function selectLnurlTab() {
+    var payout = document.querySelector('#payout');
+    if (!payout || initializedPayouts.has(payout)) return;
+    var tab = payout.querySelector('button#tab-qr[role="tab"]');
+    if (!tab || tab.disabled || tab.getAttribute('aria-disabled') === 'true' || !tab.getClientRects().length) return;
+    initializedPayouts.add(payout);
+    if (tab.getAttribute('aria-selected') !== 'true') tab.click();
+  }
   function reportLnurl() {
     var link = document.querySelector('#payout .wallet-open[href]');
     var match = link && /^lightning:(lnurl1[0-9a-z]+)$/i.exec(link.getAttribute('href') || '');
@@ -27,6 +36,7 @@ export const WATCH_ADS_SCRIPT = `
     button.click();
   }
   function updatePage() {
+    selectLnurlTab();
     reportLnurl();
     advanceCompletedAd();
   }

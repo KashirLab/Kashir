@@ -181,7 +181,10 @@ test('the page bridge reports visible LNURLs, changes, and removal without initi
     document: {
       documentElement: {},
       addEventListener() {},
-      querySelector: () => (href ? { getAttribute: () => href } : null),
+      querySelector: (selector) =>
+        selector === '#payout .wallet-open[href]' && href
+          ? { getAttribute: () => href }
+          : null,
     },
     MutationObserver: class {
       constructor(callback) {
@@ -207,6 +210,7 @@ test('the page bridge reports visible LNURLs, changes, and removal without initi
 function createAdPageHarness() {
   const state = {
     completed: false,
+    payout: null,
     focused: true,
     visible: true,
     button: null,
@@ -232,9 +236,11 @@ function createAdPageHarness() {
       },
       hasFocus: () => state.focused,
       querySelector: (selector) =>
-        selector === '.actions #view-complete' && state.completed
-          ? completed
-          : null,
+        selector === '#payout'
+          ? state.payout
+          : selector === '.actions #view-complete' && state.completed
+            ? completed
+            : null,
       addEventListener: (event, callback) => {
         listeners[event] = callback;
       },
@@ -266,6 +272,34 @@ function createAdPageHarness() {
   });
   return { state, notify, listeners, nextButton };
 }
+
+test('the QR / LNURL tab is selected once when each payout appears', () => {
+  const h = createAdPageHarness();
+  const tab = h.nextButton();
+  tab.disabled = true;
+  const payout = {
+    querySelector: (selector) =>
+      selector === 'button#tab-qr[role="tab"]' ? tab : null,
+  };
+  h.notify();
+  assert.equal(h.state.clicks, 0);
+  h.state.payout = payout;
+  h.notify();
+  assert.equal(h.state.clicks, 0);
+  tab.disabled = false;
+  h.notify();
+  assert.equal(h.state.clicks, 1);
+  h.notify();
+  assert.equal(h.state.clicks, 1);
+
+  tab.getAttribute = (name) => (name === 'aria-selected' ? 'true' : null);
+  h.state.payout = { ...payout };
+  h.notify();
+  assert.equal(h.state.clicks, 1, 'Leave the tab alone if already selected');
+  tab.getAttribute = () => null;
+  h.notify();
+  assert.equal(h.state.clicks, 1, 'Respect later manual tab changes');
+});
 
 test('More is clicked only after the site confirms the countdown and enables the button', () => {
   const h = createAdPageHarness();
