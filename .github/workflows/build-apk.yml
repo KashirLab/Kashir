@@ -121,6 +121,9 @@ jobs:
           distribution: 'temurin'
           java-version: '17'
 
+      - name: Setup Gradle
+        uses: gradle/actions/setup-gradle@v4
+
       - name: Setup Android SDK
         uses: android-actions/setup-android@v3
         with:
@@ -194,18 +197,28 @@ jobs:
         run: yarn install --immutable
 
       - name: Build APK
-        working-directory: ./example
+        working-directory: ./example/android
+        shell: bash
         env:
           VERSION_CODE: ${{ github.event_name != 'workflow_dispatch' && github.run_number || '1' }}
         run: |
           echo "Building APK with build number: $VERSION_CODE"
-          
-          # Build the release APK
-          yarn build:android:release
-          
-          # Also run gradlew directly to ensure release APK is built
-          cd android
-          ./gradlew assembleRelease --stacktrace
+          log=$(mktemp)
+          trap 'rm -f "$log"' EXIT
+          args=(app:assembleRelease --no-daemon --console=plain --stacktrace)
+          for attempt in 1 2 3; do
+            if ./gradlew "${args[@]}" 2>&1 | tee "$log"; then
+              exit 0
+            fi
+            if [[ "$attempt" == 3 ]] || ! grep -Fq "Plugin [id: 'org.gradle.toolchains.foojay-resolver-convention', version: '1.0.0'] was not found" "$log"; then
+              exit 1
+            fi
+            echo "Foojay plugin resolution failed. Retrying in $((attempt * 10)) seconds."
+            sleep "$((attempt * 10))"
+            if [[ "$attempt" == 1 ]]; then
+              args+=(--refresh-dependencies)
+            fi
+          done
 
       - name: Generate tag name from version
         run: |
