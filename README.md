@@ -18,3 +18,7 @@ Use a simulator name from `xcrun simctl list devices available`. The binding bui
 The app and CDK framework target iOS 15.1 or later. If you previously built with a different iOS minimum, run `CARGO_TARGET_DIR="$(mktemp -d)" yarn ubrn:ios` to avoid reusing old Cargo objects.
 
 Open `example/ios/Kashir.xcworkspace` and select the `KashirApp` scheme to run from Xcode.
+
+## Xcode Cloud
+
+Open the workspace in Xcode, then go to **Report navigator → Cloud → Get Started**. Connect the repository and add an iOS Archive action for the shared `KashirApp` scheme. The post-clone script in `example/ios/ci_scripts` builds the CDK framework and installs CocoaPods dependencies before the archive.

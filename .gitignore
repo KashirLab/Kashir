@@ -28,6 +28,9 @@ DerivedData
 *.ipa
 *.xcuserstate
 *.xcworkspace
+!/example/ios/Kashir.xcworkspace/
+/example/ios/Kashir.xcworkspace/*
+!/example/ios/Kashir.xcworkspace/contents.xcworkspacedata
 **/.xcode.env.local
 
 # Android/IJ
@@ -45,6 +48,7 @@ android.iml
 #
 example/ios/Pods
 Podfile.lock
+!/example/ios/Podfile.lock
 
 # Ruby
 example/vendor/
