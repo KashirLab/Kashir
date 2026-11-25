@@ -35,18 +35,6 @@ fi
 echo "Fixing C++ bindings to include both nostr-sdk and cdk..."
 ./scripts/fix-cpp-bindings.sh --skip-ios
 
-node <<'NODE'
-const { readFileSync, writeFileSync } = require('node:fs');
-
-// The Java UBRN template points to Gradle's codegen output by default.
-const gradlePath = 'android/build.gradle';
-const gradleSource = readFileSync(gradlePath, 'utf8');
-const localCodegenDir = '${project.buildDir}/generated/source/codegen/java';
-if (gradleSource.includes(localCodegenDir)) {
-  writeFileSync(gradlePath, gradleSource.replace(localCodegenDir, 'generated/java'));
-}
-NODE
-
 yarn codegen
 
 echo "Android build completed successfully!"
