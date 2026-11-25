@@ -1,13 +1,14 @@
 import React, { useEffect, useRef, useState } from 'react';
 import {
   ActivityIndicator,
+  AppState,
   StyleSheet,
   Text,
   TouchableOpacity,
   View,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { WebView } from 'react-native-webview';
+import { WebView, type WebViewProps } from 'react-native-webview';
 import { withdrawAdReward } from '../services/AdWithdrawalService';
 import { getErrorMessage } from './wallet/utils/errorUtils';
 import {
@@ -26,6 +27,7 @@ export function WatchAdsScreen() {
   const [hasError, setHasError] = useState(false);
   const [lnurl, setLnurl] = useState<string | null>(null);
   const [withdrawal, setWithdrawal] = useState<WithdrawalStatus | null>(null);
+  const webView = useRef<WebView<WebViewProps>>(null);
   const withdrawing = useRef(false);
   const mounted = useRef(true);
   const targetLnurl =
@@ -36,8 +38,12 @@ export function WatchAdsScreen() {
 
   useEffect(() => {
     mounted.current = true;
+    const subscription = AppState.addEventListener('change', (state) => {
+      if (state === 'active') webView.current?.requestFocus();
+    });
     return () => {
       mounted.current = false;
+      subscription.remove();
     };
   }, []);
 
@@ -121,6 +127,7 @@ export function WatchAdsScreen() {
         </View>
       ) : (
         <WebView
+          ref={webView}
           style={styles.webView}
           source={{ uri: WATCH_ADS_URL }}
           originWhitelist={[
@@ -138,9 +145,12 @@ export function WatchAdsScreen() {
             if (message) setLnurl(message.lnurl);
           }}
           onLoadStart={() => setLnurl(null)}
+          // The site's countdown only runs while document.hasFocus() is true.
+          onLoadEnd={() => webView.current?.requestFocus()}
           onShouldStartLoadWithRequest={({ url }) => !/^lightning:/i.test(url)}
           domStorageEnabled
           allowsInlineMediaPlayback
+          mediaPlaybackRequiresUserAction={false}
           startInLoadingState
           renderLoading={() => (
             <View style={[styles.messageContainer, styles.loadingOverlay]}>

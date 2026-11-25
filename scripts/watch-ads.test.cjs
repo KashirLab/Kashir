@@ -231,6 +231,7 @@ test('Withdraw becomes enabled by a trusted LNURL and payment starts only on tap
   let cursor;
   let calls = 0;
   let finish;
+  let appStateChanged;
   const react = {
     createElement: (type, props, ...children) => ({
       type,
@@ -251,8 +252,9 @@ test('Withdraw becomes enabled by a trusted LNURL and payment starts only on tap
       if (!(index in hooks)) hooks[index] = { current: initial };
       return hooks[index];
     },
-    useEffect() {
-      cursor++;
+    useEffect(effect) {
+      const index = cursor++;
+      if (!(index in hooks)) hooks[index] = { cleanup: effect() };
     },
   };
   const { WatchAdsScreen } = loadTs(
@@ -261,6 +263,17 @@ test('Withdraw becomes enabled by a trusted LNURL and payment starts only on tap
       'react': react,
       'react-native': {
         ActivityIndicator: 'ActivityIndicator',
+        AppState: {
+          addEventListener(event, callback) {
+            assert.equal(event, 'change');
+            appStateChanged = callback;
+            return {
+              remove() {
+                appStateChanged = undefined;
+              },
+            };
+          },
+        },
         View: 'View',
         Text: 'Text',
         TouchableOpacity: 'Button',
@@ -295,6 +308,33 @@ test('Withdraw becomes enabled by a trusted LNURL and payment starts only on tap
       .find(Boolean);
   }
   let tree = render();
+  const webView = find(tree, 'WebView');
+  let focusRequests = 0;
+  webView.props.ref.current = {
+    requestFocus: () => {
+      focusRequests++;
+    },
+  };
+  assert.equal(focusRequests, 0);
+  webView.props.onLoadEnd();
+  assert.equal(
+    focusRequests,
+    1,
+    'Focus the initial page so its first countdown can start'
+  );
+  appStateChanged('background');
+  assert.equal(focusRequests, 1, 'Do not focus a backgrounded ad');
+  appStateChanged('active');
+  assert.equal(
+    focusRequests,
+    2,
+    'Restore focus when returning to the visible ad'
+  );
+  assert.equal(
+    webView.props.mediaPlaybackRequiresUserAction,
+    false,
+    'Allow the site to start its first video without an extra tap'
+  );
   assert.equal(find(tree, 'Button').props.disabled, true);
   find(tree, 'WebView').props.onMessage({
     nativeEvent: { url: ORIGIN, data: bridgeMessage(lnurl) },
@@ -314,6 +354,12 @@ test('Withdraw becomes enabled by a trusted LNURL and payment starts only on tap
   assert.equal(
     find(find(tree, 'Button'), 'Text').props.children[0],
     'Received'
+  );
+  for (const hook of hooks) hook?.cleanup?.();
+  assert.equal(
+    appStateChanged,
+    undefined,
+    'Remove the focus listener when leaving Watch Ads'
   );
 });
 
