@@ -36,6 +36,9 @@ DerivedData
 !/example/ios/Kashir.xcworkspace/xcshareddata/xcschemes/
 /example/ios/Kashir.xcworkspace/xcshareddata/xcschemes/*
 !/example/ios/Kashir.xcworkspace/xcshareddata/xcschemes/KashirApp.xcscheme
+!/example/ios/Kashir.xcworkspace/xcshareddata/swiftpm/
+/example/ios/Kashir.xcworkspace/xcshareddata/swiftpm/*
+!/example/ios/Kashir.xcworkspace/xcshareddata/swiftpm/Package.resolved
 **/.xcode.env.local
 
 # Android/IJ
