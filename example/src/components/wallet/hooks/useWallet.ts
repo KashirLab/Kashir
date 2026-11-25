@@ -47,6 +47,21 @@ export function useWallet() {
   const [paymentReceivedAmount, setPaymentReceivedAmount] = useState<bigint>(
     BigInt(0)
   );
+  const receiveConfettiTimer = useRef<ReturnType<typeof setTimeout> | null>(
+    null
+  );
+  const celebrateReceipt = useCallback((amount: bigint) => {
+    if (receiveConfettiTimer.current !== null) {
+      clearTimeout(receiveConfettiTimer.current);
+    }
+    setPaymentReceivedAmount(amount);
+    setShowConfetti(true);
+    receiveConfettiTimer.current = setTimeout(() => {
+      receiveConfettiTimer.current = null;
+      setShowConfetti(false);
+      setPaymentReceivedAmount(BigInt(0));
+    }, 3000);
+  }, []);
   const [showSentConfetti, setShowSentConfetti] = useState(false);
   const [paymentSentAmount, setPaymentSentAmount] = useState<bigint>(BigInt(0));
   const [showSendingLoader, setShowSendingLoader] = useState(false);
@@ -652,15 +667,9 @@ export function useWallet() {
           await updateBalance();
 
           // Show success
-          setPaymentReceivedAmount(BigInt(receiveAmount));
           setShowReceivingLoader(false);
-          setShowConfetti(true);
           closeReceiveModal();
-
-          setTimeout(() => {
-            setShowConfetti(false);
-            setPaymentReceivedAmount(BigInt(0));
-          }, 3000);
+          celebrateReceipt(BigInt(receiveAmount));
         }
       } catch (error) {
         console.error('Error checking payment:', error);
@@ -1167,6 +1176,9 @@ export function useWallet() {
   // Cleanup on unmount
   useEffect(() => {
     return () => {
+      if (receiveConfettiTimer.current !== null) {
+        clearTimeout(receiveConfettiTimer.current);
+      }
       if (paymentCheckInterval.current) {
         clearInterval(paymentCheckInterval.current);
       }
@@ -1200,6 +1212,7 @@ export function useWallet() {
     showMintUrlModal,
     showConfetti,
     paymentReceivedAmount,
+    celebrateReceipt,
     showSentConfetti,
     paymentSentAmount,
     showSendingLoader,

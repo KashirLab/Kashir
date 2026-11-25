@@ -6,7 +6,7 @@
   "content_scripts": [
     {
       "matches": ["https://ads.example/*"],
-      "js": ["next-ad.js"],
+      "js": ["watch-ads.js"],
       "run_at": "document_idle"
     }
   ]

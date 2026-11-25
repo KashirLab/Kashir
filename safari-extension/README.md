@@ -11,3 +11,5 @@ The command uses the signing team from Kashir’s Xcode project. To override it,
 If several iPhones are available, use `yarn safari:device <device-udid> <development-team-id>`.
 
 The command generates an iOS project, builds and signs the Debug app, and installs and launches it on the phone. Enable **Kashir** under **Settings → Apps → Safari → Extensions**, then grant it access to the ad site in Safari.
+
+After you tap **受け取り**, the extension selects LNURL and opens the Kashir wallet app to redeem the reward. Rebuild the wallet app as well as the extension.
