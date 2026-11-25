@@ -11,7 +11,7 @@ browser.runtime.onMessage.addListener((message, sender) => {
     return undefined;
   }
 
-  return browser.runtime.sendNativeMessage('com.kashir.safari', {
+  return browser.runtime.sendNativeMessage('com.kashir.ios', {
     lnurl: message.lnurl,
   });
 });

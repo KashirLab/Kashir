@@ -38,7 +38,6 @@
     "!**/.*"
   ],
   "scripts": {
-    "safari:device": "bash ./scripts/run-safari-device.sh",
     "ubrn:ios:cdk": "./scripts/patch-cdk-uniffi.sh && ubrn build ios --config ubrn.cdk.config.yaml --and-generate \"$@\" && ./scripts/fix-ios-header.sh",
     "ubrn:ios": "yarn ubrn:ios:cdk && (cd example/ios && pod install)",
     "ubrn:android": "./scripts/patch-cdk-uniffi.sh && ./scripts/build-android.sh",

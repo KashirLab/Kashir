@@ -96,7 +96,6 @@ ios/
 cpp/
 src/
 !example/ios/
-!/safari-extension/ios/
 !example/src/
 !example/android/app/src/
 .env

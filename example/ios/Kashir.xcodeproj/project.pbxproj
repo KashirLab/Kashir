@@ -13,6 +13,13 @@
 		81AB9BB82411601600AC10FF /* LaunchScreen.storyboard in Resources */ = {isa = PBXBuildFile; fileRef = 81AB9BB72411601600AC10FF /* LaunchScreen.storyboard */; };
 		D97E4649F137287B38656E21 /* PrivacyInfo.xcprivacy in Resources */ = {isa = PBXBuildFile; fileRef = 13B07FB81A68108700A75B9A /* PrivacyInfo.xcprivacy */; };
 		50786CF8278941E4B9D23A5D /* WalletOperationLock.m in Sources */ = {isa = PBXBuildFile; fileRef = CA53B1298F464A25A0F8E133 /* WalletOperationLock.m */; };
+		1122D006AA723BE134CDAF79 /* background.js in Resources */ = {isa = PBXBuildFile; fileRef = 02C261AE3DADAD999C62C5F0 /* background.js */; };
+		2321A2203C7A833A5BB89AA6 /* Kashir Extension.appex in Embed Foundation Extensions */ = {isa = PBXBuildFile; fileRef = 0AE277B930B7471200E66A70 /* Kashir Extension.appex */; settings = {ATTRIBUTES = (CodeSignOnCopy, RemoveHeadersOnCopy, ); }; };
+		6F4A8DCAB6022401112C1F48 /* watch-ads.js in Resources */ = {isa = PBXBuildFile; fileRef = 5732A45195104D2CF4BFF57D /* watch-ads.js */; };
+		A4554CA6A838AB6D054A3944 /* SafariWebExtensionHandler.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7A0C92122345CBAADDC9FAA4 /* SafariWebExtensionHandler.swift */; };
+		AEF36203F36178BA87096731 /* manifest.json in Resources */ = {isa = PBXBuildFile; fileRef = E8424B0C8C6790CBEE1F606C /* manifest.json */; };
+		D79303F61E793AEB793AAB65 /* icon-512.png in Resources */ = {isa = PBXBuildFile; fileRef = 6C2D4B20A7CBB3EB2B631025 /* icon-512.png */; };
+		ED5ED9EB0874243C9806260F /* SafariReward in Frameworks */ = {isa = PBXBuildFile; productRef = 3ED414C3AC4FECCA605688B6 /* SafariReward */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
@@ -27,6 +34,13 @@
 		81AB9BB72411601600AC10FF /* LaunchScreen.storyboard */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = file.storyboard; name = LaunchScreen.storyboard; path = Kashir/LaunchScreen.storyboard; sourceTree = "<group>"; };
 		ED297162215061F000B7C4FE /* JavaScriptCore.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = JavaScriptCore.framework; path = System/Library/Frameworks/JavaScriptCore.framework; sourceTree = SDKROOT; };
 		CA53B1298F464A25A0F8E133 /* WalletOperationLock.m */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.objc; name = WalletOperationLock.m; path = Kashir/WalletOperationLock.m; sourceTree = "<group>"; };
+		02C261AE3DADAD999C62C5F0 /* background.js */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.javascript; name = background.js; path = "../../safari-extension/background.js"; sourceTree = SOURCE_ROOT; };
+		041B5CAF6AEDD99BC497868E /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; name = Info.plist; path = ../../safari-extension/native/Info.plist; sourceTree = SOURCE_ROOT; };
+		0AE277B930B7471200E66A70 /* Kashir Extension.appex */ = {isa = PBXFileReference; explicitFileType = "wrapper.app-extension"; includeInIndex = 0; path = "Kashir Extension.appex"; sourceTree = BUILT_PRODUCTS_DIR; };
+		5732A45195104D2CF4BFF57D /* watch-ads.js */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.javascript; name = "watch-ads.js"; path = "../../safari-extension/watch-ads.js"; sourceTree = SOURCE_ROOT; };
+		6C2D4B20A7CBB3EB2B631025 /* icon-512.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; name = "icon-512.png"; path = "../../safari-extension/icon-512.png"; sourceTree = SOURCE_ROOT; };
+		7A0C92122345CBAADDC9FAA4 /* SafariWebExtensionHandler.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; name = SafariWebExtensionHandler.swift; path = ../../safari-extension/native/SafariWebExtensionHandler.swift; sourceTree = SOURCE_ROOT; };
+		E8424B0C8C6790CBEE1F606C /* manifest.json */ = {isa = PBXFileReference; lastKnownFileType = text.json; name = manifest.json; path = "../../safari-extension/manifest.json"; sourceTree = SOURCE_ROOT; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -37,6 +51,12 @@
 				0C80B921A6F3F58F76C31292 /* libPods-Kashir.a in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
+		};
+		8292283E6F09D8320C35DAC3 /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			files = (
+				ED5ED9EB0874243C9806260F /* SafariReward in Frameworks */,
+			);
 		};
 /* End PBXFrameworksBuildPhase section */
 
@@ -76,6 +96,7 @@
 				13B07FAE1A68108700A75B9A /* Kashir */,
 				832341AE1AAA6A7D00B99B32 /* Libraries */,
 				83CBBA001A601CBA00E9B192 /* Products */,
+				19D8EB1D9D4A2744C6C3E334 /* Kashir Extension */,
 				2D16E6871FA4F8E400B85C8A /* Frameworks */,
 				BBD78D7AC51CEA395F1C20DB /* Pods */,
 			);
@@ -88,6 +109,7 @@
 			isa = PBXGroup;
 			children = (
 				13B07F961A680F5B00A75B9A /* Kashir.app */,
+				0AE277B930B7471200E66A70 /* Kashir Extension.appex */,
 			);
 			name = Products;
 			sourceTree = "<group>";
@@ -100,6 +122,26 @@
 			);
 			path = Pods;
 			sourceTree = "<group>";
+		};
+		19D8EB1D9D4A2744C6C3E334 /* Kashir Extension */ = {
+			isa = PBXGroup;
+			children = (
+				3590B04BAD28D2729C285215 /* Resources */,
+				7A0C92122345CBAADDC9FAA4 /* SafariWebExtensionHandler.swift */,
+				041B5CAF6AEDD99BC497868E /* Info.plist */,
+			);
+			sourceTree = "<group>";
+		};
+		3590B04BAD28D2729C285215 /* Resources */ = {
+			isa = PBXGroup;
+			children = (
+				02C261AE3DADAD999C62C5F0 /* background.js */,
+				E8424B0C8C6790CBEE1F606C /* manifest.json */,
+				5732A45195104D2CF4BFF57D /* watch-ads.js */,
+				6C2D4B20A7CBB3EB2B631025 /* icon-512.png */,
+			);
+			name = Resources;
+			sourceTree = SOURCE_ROOT;
 		};
 /* End PBXGroup section */
 
@@ -115,17 +157,69 @@
 				00DD1BFF1BD5951E006B06BC /* Bundle React Native code and images */,
 				00EEFC60759A1932668264C0 /* [CP] Embed Pods Frameworks */,
 				E235C05ADACE081382539298 /* [CP] Copy Pods Resources */,
+				8B3CC2F15DFB6A6B3722104F /* Embed Foundation Extensions */,
 			);
 			buildRules = (
 			);
 			dependencies = (
+				FFF6127F0C4A4D794F086859 /* PBXTargetDependency */,
 			);
 			name = Kashir;
 			productName = Kashir;
 			productReference = 13B07F961A680F5B00A75B9A /* Kashir.app */;
 			productType = "com.apple.product-type.application";
 		};
+		0AE277B830B7471200E66A70 /* Kashir Extension */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = D908A68B88A4BB2578E13D88 /* Build configuration list for PBXNativeTarget "Kashir Extension" */;
+			buildPhases = (
+				1B91890C4B67E8A32CE820BD /* Sources */,
+				8292283E6F09D8320C35DAC3 /* Frameworks */,
+				59764C0F85C3FEFB79135591 /* Resources */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+			);
+			name = "Kashir Extension";
+			packageProductDependencies = (
+				3ED414C3AC4FECCA605688B6 /* SafariReward */,
+			);
+			productName = "Kashir Extension";
+			productReference = 0AE277B930B7471200E66A70 /* Kashir Extension.appex */;
+			productType = "com.apple.product-type.app-extension";
+		};
 /* End PBXNativeTarget section */
+
+/* Begin PBXContainerItemProxy section */
+		6C54B16554B2835DE64B4E22 /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = 83CBB9F71A601CBA00E9B192 /* Project object */;
+			proxyType = 1;
+			remoteGlobalIDString = 0AE277B830B7471200E66A70;
+			remoteInfo = "Kashir Extension";
+		};
+/* End PBXContainerItemProxy section */
+
+/* Begin PBXCopyFilesBuildPhase section */
+		8B3CC2F15DFB6A6B3722104F /* Embed Foundation Extensions */ = {
+			isa = PBXCopyFilesBuildPhase;
+			dstPath = "";
+			dstSubfolderSpec = 13;
+			files = (
+				2321A2203C7A833A5BB89AA6 /* Kashir Extension.appex in Embed Foundation Extensions */,
+			);
+			name = "Embed Foundation Extensions";
+		};
+/* End PBXCopyFilesBuildPhase section */
+
+/* Begin PBXTargetDependency section */
+		FFF6127F0C4A4D794F086859 /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			target = 0AE277B830B7471200E66A70 /* Kashir Extension */;
+			targetProxy = 6C54B16554B2835DE64B4E22 /* PBXContainerItemProxy */;
+		};
+/* End PBXTargetDependency section */
 
 /* Begin PBXProject section */
 		83CBB9F71A601CBA00E9B192 /* Project object */ = {
@@ -147,11 +241,15 @@
 				Base,
 			);
 			mainGroup = 83CBB9F61A601CBA00E9B192;
+			packageReferences = (
+				83E4888B555E5E5F4B580A6D /* XCLocalSwiftPackageReference "native" */,
+			);
 			productRefGroup = 83CBBA001A601CBA00E9B192 /* Products */;
 			projectDirPath = "";
 			projectRoot = "";
 			targets = (
 				13B07F861A680F5B00A75B9A /* Kashir */,
+				0AE277B830B7471200E66A70 /* Kashir Extension */,
 			);
 		};
 /* End PBXProject section */
@@ -166,6 +264,15 @@
 				D97E4649F137287B38656E21 /* PrivacyInfo.xcprivacy in Resources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
+		};
+		59764C0F85C3FEFB79135591 /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			files = (
+				1122D006AA723BE134CDAF79 /* background.js in Resources */,
+				D79303F61E793AEB793AAB65 /* icon-512.png in Resources */,
+				AEF36203F36178BA87096731 /* manifest.json in Resources */,
+				6F4A8DCAB6022401112C1F48 /* watch-ads.js in Resources */,
+			);
 		};
 /* End PBXResourcesBuildPhase section */
 
@@ -254,6 +361,12 @@
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
+		1B91890C4B67E8A32CE820BD /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			files = (
+				A4554CA6A838AB6D054A3944 /* SafariWebExtensionHandler.swift in Sources */,
+			);
+		};
 /* End PBXSourcesBuildPhase section */
 
 /* Begin XCBuildConfiguration section */
@@ -263,7 +376,6 @@
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				CLANG_ENABLE_MODULES = YES;
-				CURRENT_PROJECT_VERSION = 3;
 				CODE_SIGN_ENTITLEMENTS = Kashir/WalletSharing.entitlements;
 				DEVELOPMENT_TEAM = 8374UD35G5;
 				ENABLE_BITCODE = NO;
@@ -273,7 +385,6 @@
 					"$(inherited)",
 					"@executable_path/Frameworks",
 				);
-				MARKETING_VERSION = 0.1.0;
 				OTHER_LDFLAGS = (
 					"$(inherited)",
 					"-ObjC",
@@ -293,7 +404,6 @@
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				CLANG_ENABLE_MODULES = YES;
-				CURRENT_PROJECT_VERSION = 3;
 				CODE_SIGN_ENTITLEMENTS = Kashir/WalletSharing.entitlements;
 				DEVELOPMENT_TEAM = 8374UD35G5;
 				INFOPLIST_FILE = Kashir/Info.plist;
@@ -302,7 +412,6 @@
 					"$(inherited)",
 					"@executable_path/Frameworks",
 				);
-				MARKETING_VERSION = 0.1.0;
 				OTHER_LDFLAGS = (
 					"$(inherited)",
 					"-ObjC",
@@ -318,6 +427,8 @@
 		83CBBA201A601CBA00E9B192 /* Debug */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
+				MARKETING_VERSION = 0.1.0;
+				CURRENT_PROJECT_VERSION = 3;
 				ALWAYS_SEARCH_USER_PATHS = NO;
 				CLANG_ANALYZER_LOCALIZABILITY_NONLOCALIZED = YES;
 				CLANG_CXX_LANGUAGE_STANDARD = "c++20";
@@ -404,6 +515,8 @@
 		83CBBA211A601CBA00E9B192 /* Release */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
+				MARKETING_VERSION = 0.1.0;
+				CURRENT_PROJECT_VERSION = 3;
 				ALWAYS_SEARCH_USER_PATHS = NO;
 				CLANG_ANALYZER_LOCALIZABILITY_NONLOCALIZED = YES;
 				CLANG_CXX_LANGUAGE_STANDARD = "c++20";
@@ -479,6 +592,74 @@
 			};
 			name = Release;
 		};
+		99CE6C7D8F00FC8B57089FF7 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				CODE_SIGN_ENTITLEMENTS = Kashir/WalletSharing.entitlements;
+				CODE_SIGN_STYLE = Automatic;
+				DEVELOPMENT_TEAM = 8374UD35G5;
+
+				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_FILE = ../../safari-extension/native/Info.plist;
+				INFOPLIST_KEY_CFBundleDisplayName = "Kashir Extension";
+
+				APPLICATION_EXTENSION_API_ONLY = YES;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+					"@executable_path/../../Frameworks",
+				);
+
+				OTHER_LDFLAGS = (
+					"-framework",
+					SafariServices,
+				);
+				PRODUCT_BUNDLE_IDENTIFIER = com.kashir.ios.SafariExtension;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SKIP_INSTALL = YES;
+				STRING_CATALOG_GENERATE_SYMBOLS = YES;
+
+				SWIFT_EMIT_LOC_STRINGS = YES;
+
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = "1,2";
+			};
+			name = Release;
+		};
+		C993CA117111B2CE230C5CE9 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				CODE_SIGN_ENTITLEMENTS = Kashir/WalletSharing.entitlements;
+				CODE_SIGN_STYLE = Automatic;
+				DEVELOPMENT_TEAM = 8374UD35G5;
+
+				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_FILE = ../../safari-extension/native/Info.plist;
+				INFOPLIST_KEY_CFBundleDisplayName = "Kashir Extension";
+
+				APPLICATION_EXTENSION_API_ONLY = YES;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+					"@executable_path/../../Frameworks",
+				);
+
+				OTHER_LDFLAGS = (
+					"-framework",
+					SafariServices,
+				);
+				PRODUCT_BUNDLE_IDENTIFIER = com.kashir.ios.SafariExtension;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SKIP_INSTALL = YES;
+				STRING_CATALOG_GENERATE_SYMBOLS = YES;
+
+				SWIFT_EMIT_LOC_STRINGS = YES;
+
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = "1,2";
+			};
+			name = Debug;
+		};
 /* End XCBuildConfiguration section */
 
 /* Begin XCConfigurationList section */
@@ -500,7 +681,30 @@
 			defaultConfigurationIsVisible = 0;
 			defaultConfigurationName = Release;
 		};
+		D908A68B88A4BB2578E13D88 /* Build configuration list for PBXNativeTarget "Kashir Extension" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				C993CA117111B2CE230C5CE9 /* Debug */,
+				99CE6C7D8F00FC8B57089FF7 /* Release */,
+			);
+			defaultConfigurationName = Release;
+		};
 /* End XCConfigurationList section */
+/* Begin XCLocalSwiftPackageReference section */
+		83E4888B555E5E5F4B580A6D /* XCLocalSwiftPackageReference "native" */ = {
+			isa = XCLocalSwiftPackageReference;
+			relativePath = ../../safari-extension/native;
+		};
+/* End XCLocalSwiftPackageReference section */
+
+/* Begin XCSwiftPackageProductDependency section */
+		3ED414C3AC4FECCA605688B6 /* SafariReward */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = 83E4888B555E5E5F4B580A6D /* XCLocalSwiftPackageReference "native" */;
+			productName = SafariReward;
+		};
+/* End XCSwiftPackageProductDependency section */
+
 	};
 	rootObject = 83CBB9F71A601CBA00E9B192 /* Project object */;
 }
