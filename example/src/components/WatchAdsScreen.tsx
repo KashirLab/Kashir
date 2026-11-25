@@ -25,16 +25,10 @@ interface WithdrawalStatus {
 
 export function WatchAdsScreen() {
   const [hasError, setHasError] = useState(false);
-  const [lnurl, setLnurl] = useState<string | null>(null);
   const [withdrawal, setWithdrawal] = useState<WithdrawalStatus | null>(null);
   const webView = useRef<WebView<WebViewProps>>(null);
-  const withdrawing = useRef(false);
+  const attempts = useRef(new Map<string, WithdrawalStatus['state']>());
   const mounted = useRef(true);
-  const targetLnurl =
-    lnurl || (withdrawal?.state === 'error' ? withdrawal.lnurl : null);
-  const isWithdrawing = withdrawal?.state === 'pending';
-  const isReceived =
-    withdrawal?.state === 'success' && withdrawal.lnurl === targetLnurl;
 
   useEffect(() => {
     mounted.current = true;
@@ -47,31 +41,28 @@ export function WatchAdsScreen() {
     };
   }, []);
 
-  const handleWithdraw = async () => {
-    if (!targetLnurl || withdrawing.current || isReceived) return;
-    withdrawing.current = true;
+  const receiveReward = async (lnurl: string) => {
+    const attempt = attempts.current.get(lnurl);
+    if (attempt && attempt !== 'error') return;
+    attempts.current.set(lnurl, 'pending');
     setWithdrawal({
-      lnurl: targetLnurl,
+      lnurl,
       state: 'pending',
       message: 'Receiving your reward into your Cashu wallet...',
     });
+    const finish = (state: 'success' | 'error', message: string) => {
+      attempts.current.set(lnurl, state);
+      if (mounted.current) {
+        setWithdrawal((current) =>
+          current?.lnurl === lnurl ? { lnurl, state, message } : current
+        );
+      }
+    };
     try {
-      const amount = await withdrawAdReward(targetLnurl);
-      if (mounted.current)
-        setWithdrawal({
-          lnurl: targetLnurl,
-          state: 'success',
-          message: `Received ${amount} sats in your Cashu wallet.`,
-        });
+      const amount = await withdrawAdReward(lnurl);
+      finish('success', `Received ${amount} sats in your Cashu wallet.`);
     } catch (error) {
-      if (mounted.current)
-        setWithdrawal({
-          lnurl: targetLnurl,
-          state: 'error',
-          message: getErrorMessage(error),
-        });
-    } finally {
-      withdrawing.current = false;
+      finish('error', getErrorMessage(error));
     }
   };
 
@@ -79,40 +70,28 @@ export function WatchAdsScreen() {
     <SafeAreaView style={styles.container} edges={['top', 'left', 'right']}>
       <View style={styles.header}>
         <Text style={styles.headerTitle}>Watch Ads</Text>
-        <TouchableOpacity
-          accessibilityRole="button"
-          accessibilityLabel="Withdraw ad rewards to your Cashu wallet"
-          accessibilityState={{
-            disabled: !targetLnurl || isWithdrawing || isReceived,
-            busy: isWithdrawing,
-          }}
-          disabled={!targetLnurl || isWithdrawing || isReceived}
-          style={[
-            styles.withdrawButton,
-            (!targetLnurl || isWithdrawing || isReceived) &&
-              styles.disabledButton,
-          ]}
-          onPress={handleWithdraw}
-        >
-          {isWithdrawing ? (
-            <ActivityIndicator size="small" color="#fff" />
-          ) : (
-            <Text style={styles.retryText}>
-              {isReceived ? 'Received' : 'Withdraw'}
-            </Text>
-          )}
-        </TouchableOpacity>
       </View>
       {withdrawal && (
-        <Text
-          accessibilityLiveRegion="polite"
-          style={[
-            styles.withdrawalMessage,
-            withdrawal.state === 'error' && styles.withdrawalError,
-          ]}
-        >
-          {withdrawal.message}
-        </Text>
+        <View>
+          <Text
+            accessibilityLiveRegion="polite"
+            style={[
+              styles.withdrawalMessage,
+              withdrawal.state === 'error' && styles.withdrawalError,
+            ]}
+          >
+            {withdrawal.message}
+          </Text>
+          {withdrawal.state === 'error' && (
+            <TouchableOpacity
+              accessibilityRole="button"
+              style={styles.retryWithdrawalButton}
+              onPress={() => receiveReward(withdrawal.lnurl)}
+            >
+              <Text style={styles.retryText}>Retry reward</Text>
+            </TouchableOpacity>
+          )}
+        </View>
       )}
       {hasError ? (
         <View style={styles.messageContainer}>
@@ -142,9 +121,10 @@ export function WatchAdsScreen() {
               nativeEvent.url,
               nativeEvent.data
             );
-            if (message) setLnurl(message.lnurl);
+            if (message?.lnurl && !attempts.current.has(message.lnurl)) {
+              void receiveReward(message.lnurl);
+            }
           }}
-          onLoadStart={() => setLnurl(null)}
           // The site's countdown only runs while document.hasFocus() is true.
           onLoadEnd={() => webView.current?.requestFocus()}
           onShouldStartLoadWithRequest={({ url }) => !/^lightning:/i.test(url)}
@@ -184,15 +164,14 @@ const styles = StyleSheet.create({
     fontWeight: 'bold',
     color: '#fff',
   },
-  withdrawButton: {
-    paddingHorizontal: 16,
-    paddingVertical: 10,
+  retryWithdrawalButton: {
+    alignSelf: 'flex-start',
+    marginHorizontal: 20,
+    marginBottom: 12,
+    padding: 10,
     borderRadius: 8,
     backgroundColor: '#0070d6',
-    minWidth: 104,
-    alignItems: 'center',
   },
-  disabledButton: { opacity: 0.5 },
   withdrawalMessage: {
     paddingHorizontal: 20,
     paddingVertical: 12,

@@ -401,11 +401,12 @@ test('bridge messages from other origins and malformed messages are ignored', ()
   );
 });
 
-test('Withdraw becomes enabled by a trusted LNURL and payment starts only on tap', async () => {
+test('a trusted payout LNURL starts one automatic withdrawal and errors can be retried', async () => {
   const hooks = [];
   let cursor;
   let calls = 0;
   let finish;
+  let rejectPayment;
   let appStateChanged;
   const react = {
     createElement: (type, props, ...children) => ({
@@ -418,7 +419,8 @@ test('Withdraw becomes enabled by a trusted LNURL and payment starts only on tap
       return [
         hooks[index],
         (value) => {
-          hooks[index] = value;
+          hooks[index] =
+            typeof value === 'function' ? value(hooks[index]) : value;
         },
       ];
     },
@@ -459,8 +461,9 @@ test('Withdraw becomes enabled by a trusted LNURL and payment starts only on tap
       '../services/AdWithdrawalService': {
         withdrawAdReward: () => {
           calls++;
-          return new Promise((resolve) => {
+          return new Promise((resolve, reject) => {
             finish = resolve;
+            rejectPayment = reject;
           });
         },
       },
@@ -510,26 +513,35 @@ test('Withdraw becomes enabled by a trusted LNURL and payment starts only on tap
     false,
     'Allow the site to start its first video without an extra tap'
   );
-  assert.equal(find(tree, 'Button').props.disabled, true);
-  find(tree, 'WebView').props.onMessage({
-    nativeEvent: { url: ORIGIN, data: bridgeMessage(lnurl) },
-  });
+  assert.equal(find(tree, 'Button'), undefined);
+  const report = (url, data) =>
+    find(tree, 'WebView').props.onMessage({ nativeEvent: { url, data } });
+  report('https://evil.example', bridgeMessage(lnurl));
+  report(ORIGIN, bridgeMessage(null));
+  assert.equal(calls, 0);
+
+  report(ORIGIN, bridgeMessage(lnurl));
+  report(ORIGIN, bridgeMessage(lnurl));
+  assert.equal(calls, 1);
   tree = render();
-  assert.equal(find(tree, 'Button').props.disabled, false);
-  assert.equal(calls, 0, 'Detecting a reward must not withdraw automatically');
-  const payment = find(tree, 'Button').props.onPress();
-  await find(tree, 'Button').props.onPress();
-  assert.equal(calls, 1, 'Ignore duplicate taps');
+  assert.equal(find(tree, 'Button'), undefined);
+  assert.match(JSON.stringify(tree), /Receiving your reward/);
+
+  rejectPayment(new Error('Payout failed'));
+  await new Promise((resolve) => setImmediate(resolve));
+  report(ORIGIN, bridgeMessage(lnurl));
+  assert.equal(calls, 1, 'Do not retry automatically after a failure');
+
   tree = render();
-  assert.equal(find(tree, 'Button').props.accessibilityState.busy, true);
+  const retry = find(tree, 'Button').props.onPress();
+  assert.equal(calls, 2);
   finish(2n);
-  await payment;
+  await retry;
   tree = render();
-  assert.equal(find(tree, 'Button').props.disabled, true);
-  assert.equal(
-    find(find(tree, 'Button'), 'Text').props.children[0],
-    'Received'
-  );
+  assert.equal(find(tree, 'Button'), undefined);
+  assert.match(JSON.stringify(tree), /Received 2 sats/);
+  report(ORIGIN, bridgeMessage(lnurl));
+  assert.equal(calls, 2);
   for (const hook of hooks) hook?.cleanup?.();
   assert.equal(
     appStateChanged,
