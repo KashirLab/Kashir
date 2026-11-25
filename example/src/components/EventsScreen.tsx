@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useEffectEvent, useMemo } from 'react';
 import { TouchableOpacity, Text } from 'react-native';
 import { SafeAreaView as SafeAreaViewContext } from 'react-native-safe-area-context';
-import { NostrClientService } from '../services/NostrClient';
+import { ConnectionState, NostrClientService } from '../services/NostrClient';
 import { ProfileService } from '../services/ProfileService';
 import { useEvents } from '../hooks/useEvents';
 import { useCalendars } from '../hooks/useCalendars';
@@ -27,6 +27,7 @@ export function EventsScreen({
   navigation,
 }: EventsScreenProps) {
   const [client, setClient] = useState<Client | null>(null);
+  const [connectionFailed, setConnectionFailed] = useState(false);
   const [isCreateEventModalVisible, setIsCreateEventModalVisible] =
     useState(false);
   const [isCreateCalendarModalVisible, setIsCreateCalendarModalVisible] =
@@ -41,6 +42,7 @@ export function EventsScreen({
   const {
     events,
     loading: eventsLoading,
+    loadFailed,
     fetchEvents,
   } = useEvents(client, profileService);
 
@@ -55,6 +57,9 @@ export function EventsScreen({
     const checkClientReady = () => {
       const currentClient = clientService.getClient();
       const ready = clientService.isReady();
+      setConnectionFailed(
+        clientService.getConnectionState() === ConnectionState.Error
+      );
 
       if (ready && currentClient) {
         setClient(currentClient);
@@ -134,6 +139,19 @@ export function EventsScreen({
     setCurrentView('events');
   };
 
+  const handleRefreshEvents = async () => {
+    if (client) {
+      await fetchEvents(userNpub);
+    } else {
+      setConnectionFailed(false);
+      try {
+        setClient(await clientService.initialize());
+      } catch {
+        setConnectionFailed(true);
+      }
+    }
+  };
+
   const handleCreateEvent = () => {
     setIsCreateEventModalVisible(true);
   };
@@ -187,7 +205,9 @@ export function EventsScreen({
       {currentView === 'events' ? (
         <EventList
           events={events}
-          loading={eventsLoading}
+          loading={eventsLoading || (!client && !connectionFailed)}
+          loadFailed={loadFailed || connectionFailed}
+          onRefresh={handleRefreshEvents}
           profileService={profileService}
           title="Events"
           onEventPress={handleEventPress}

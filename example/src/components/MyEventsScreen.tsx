@@ -35,6 +35,7 @@ export function MyEventsScreen({ route, navigation }: MyEventsScreenProps) {
   const {
     events,
     loading: eventsLoading,
+    loadFailed,
     fetchEvents,
   } = useEvents(client, profileService);
 
@@ -119,6 +120,8 @@ export function MyEventsScreen({ route, navigation }: MyEventsScreenProps) {
       <EventList
         events={events}
         loading={eventsLoading}
+        loadFailed={loadFailed}
+        onRefresh={() => fetchEvents(userNpub, true)}
         profileService={profileService}
         title="My Events"
         onEventPress={handleEventPress}

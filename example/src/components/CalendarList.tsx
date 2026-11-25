@@ -63,17 +63,6 @@ export function CalendarList({
     );
   }
 
-  if (calendars.length === 0) {
-    return (
-      <View style={styles.emptyContainer}>
-        <Text style={styles.emptyText}>📅 No calendars found</Text>
-        <Text style={styles.emptySubtext}>
-          Calendars will appear here when they are created
-        </Text>
-      </View>
-    );
-  }
-
   return (
     <View style={styles.container}>
       <View style={styles.header}>
@@ -125,8 +114,19 @@ export function CalendarList({
 
       <ScrollView
         style={styles.scrollView}
+        contentContainerStyle={
+          calendars.length === 0 ? styles.emptyContainer : undefined
+        }
         showsVerticalScrollIndicator={false}
       >
+        {calendars.length === 0 && (
+          <>
+            <Text style={styles.emptyText}>No calendars found</Text>
+            <Text style={styles.emptySubtext}>
+              Calendars will appear here when they are created
+            </Text>
+          </>
+        )}
         {calendars.map((calendar) => (
           <TouchableOpacity
             key={calendar.id}

@@ -6,6 +6,7 @@ import {
   NostrPublicKey as PublicKey,
   ReqTarget,
 } from 'kashir';
+import type { EventLike } from 'kashir';
 import { ProfileService } from '../services/ProfileService';
 import { tagsToArray } from '../services/NostrUtils';
 
@@ -31,6 +32,7 @@ export function useEvents(
   profileService: ProfileService
 ) {
   const [events, setEvents] = useState<CalendarEvent[]>([]);
+  const [loadFailed, setLoadFailed] = useState(false);
   const [loading, setLoading] = useState(false);
   const [profilesLoading, setProfilesLoading] = useState(false);
 
@@ -41,7 +43,10 @@ export function useEvents(
       }
 
       setLoading(true);
-      setEvents([]);
+      setLoadFailed(false);
+      if (myEventsOnly) {
+        setEvents([]);
+      }
 
       try {
         let eventsFilter = new Filter()
@@ -54,10 +59,21 @@ export function useEvents(
           eventsFilter = eventsFilter.author(authorPubkey);
         }
 
-        const events = await client.fetchEvents(
+        const stream = await client.streamEvents(
           ReqTarget.auto([eventsFilter]),
+          undefined,
           15000
         );
+        const events: EventLike[] = [];
+        const relayErrors: string[] = [];
+        for (let item = await stream.next(); item; item = await stream.next()) {
+          if (item.event) events.push(item.event);
+          if (item.error) relayErrors.push(item.error);
+        }
+
+        if (events.length === 0 && relayErrors.length > 0) {
+          throw new Error(relayErrors.join(', '));
+        }
 
         // Process events and extract calendar data
         const calendarEvents: CalendarEvent[] = events.map((event) => {
@@ -150,7 +166,7 @@ export function useEvents(
         }
       } catch (error) {
         console.error('Error fetching calendar events:', error);
-        setEvents([]);
+        setLoadFailed(true);
       } finally {
         setLoading(false);
       }
@@ -160,6 +176,7 @@ export function useEvents(
 
   return {
     events,
+    loadFailed,
     loading,
     profilesLoading,
     fetchEvents,

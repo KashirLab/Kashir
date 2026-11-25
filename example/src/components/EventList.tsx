@@ -3,6 +3,7 @@ import {
   View,
   Text,
   ScrollView,
+  RefreshControl,
   StyleSheet,
   TouchableOpacity,
   ActivityIndicator,
@@ -20,6 +21,8 @@ type SortOption = 'time' | 'distance';
 interface EventListProps {
   events: CalendarEvent[];
   loading: boolean;
+  loadFailed?: boolean;
+  onRefresh?: () => void;
   profileService: ProfileService;
   title?: string;
   onEventPress?: (event: CalendarEvent) => void;
@@ -34,6 +37,8 @@ interface EventListProps {
 export function EventList({
   events,
   loading,
+  loadFailed = false,
+  onRefresh,
   profileService,
   title = 'Events (by time)',
   onEventPress,
@@ -288,22 +293,11 @@ export function EventList({
     }
   };
 
-  if (loading) {
+  if (loading && (events.length === 0 || !onRefresh)) {
     return (
       <View style={styles.loadingContainer}>
         <ActivityIndicator size="large" color="#81b0ff" />
         <Text style={styles.loadingText}>Loading events...</Text>
-      </View>
-    );
-  }
-
-  if (events.length === 0) {
-    return (
-      <View style={styles.emptyContainer}>
-        <Text style={styles.emptyText}>📅 No events found</Text>
-        <Text style={styles.emptySubtext}>
-          Events will appear here when they are created
-        </Text>
       </View>
     );
   }
@@ -396,8 +390,32 @@ export function EventList({
 
       <ScrollView
         style={styles.scrollView}
+        contentContainerStyle={
+          sortedEvents.length === 0 ? styles.emptyContainer : undefined
+        }
         showsVerticalScrollIndicator={false}
+        refreshControl={
+          onRefresh && (
+            <RefreshControl refreshing={loading} onRefresh={onRefresh} />
+          )
+        }
       >
+        {sortedEvents.length === 0 && (
+          <>
+            <Text style={styles.emptyText}>
+              {loadFailed
+                ? 'Could not load events'
+                : events.length > 0 &&
+                    !showMyEventsOnly &&
+                    sortOption === 'time'
+                  ? 'No upcoming events'
+                  : 'No events found'}
+            </Text>
+            {onRefresh && (
+              <Text style={styles.emptySubtext}>Pull down to refresh</Text>
+            )}
+          </>
+        )}
         {sortedEvents.map((event) => (
           <TouchableOpacity
             key={event.id}

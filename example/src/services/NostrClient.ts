@@ -102,28 +102,21 @@ class NostrClientService {
         `NostrClientService: Added ${successfulRelays}/${relays.length} relays, connecting...`
       );
 
-      // Connect to relays with timeout
-      const connectTimeout = new Promise(
-        (_, reject) =>
-          setTimeout(() => reject(new Error('Connection timeout')), 15000) // 15 second timeout
-      );
-
-      await Promise.race([newClient.connect(), connectTimeout]);
-
-      console.log('NostrClientService: Client connected to relays');
-
-      // Wait for connections to stabilize
-      const stabilizeTimeout = Math.min(3000 + successfulRelays * 200, 8000); // Dynamic timeout based on relay count
-      console.log(
-        `NostrClientService: Waiting ${stabilizeTimeout}ms for connections to stabilize...`
-      );
-      await new Promise((resolve) => setTimeout(resolve, stabilizeTimeout));
+      const { success, failed } = await newClient.tryConnect(15000);
+      if (success.length === 0) {
+        const errors = [...failed.values()].join(', ');
+        throw new Error(errors || 'No relay connection was established');
+      }
+      if (failed.size > 0) {
+        // Keep retrying the remaining relays in the background.
+        await newClient.connect();
+      }
 
       this.client = newClient;
       this.connectionState = ConnectionState.Connected;
       const totalTime = Date.now() - this.connectionStartTime;
       console.log(
-        `NostrClientService: Client ready (${successfulRelays} relays, took ${totalTime}ms)`
+        `NostrClientService: Client ready (${success.length}/${successfulRelays} relays connected, took ${totalTime}ms)`
       );
 
       return newClient;
@@ -132,8 +125,6 @@ class NostrClientService {
         `Failed to initialize client (attempt ${retryCount + 1}):`,
         error
       );
-      this.connectionState = ConnectionState.Error;
-
       // Retry logic
       if (retryCount < maxRetries) {
         const retryDelay = Math.min(1000 * Math.pow(2, retryCount), 5000); // Exponential backoff, max 5s
@@ -142,6 +133,7 @@ class NostrClientService {
         return this.initialize(customRelays, retryCount + 1);
       }
 
+      this.connectionState = ConnectionState.Error;
       throw new Error(
         `Failed to connect to Nostr relays after ${maxRetries + 1} attempts: ${error instanceof Error ? error.message : 'Unknown error'}`
       );
