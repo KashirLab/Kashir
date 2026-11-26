@@ -5,12 +5,5 @@
   "version": "1.0.0",
   "icons": { "512": "icon-512.png" },
   "permissions": ["nativeMessaging"],
-  "background": { "scripts": ["background.js"], "persistent": false },
-  "content_scripts": [
-    {
-      "matches": ["https://ads.example/*"],
-      "js": ["watch-ads.js"],
-      "run_at": "document_idle"
-    }
-  ]
+  "background": { "scripts": ["background.js"], "persistent": false }
 }

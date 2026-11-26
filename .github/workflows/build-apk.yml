@@ -201,6 +201,7 @@ jobs:
         shell: bash
         env:
           VERSION_CODE: ${{ github.event_name != 'workflow_dispatch' && github.run_number || '1' }}
+          WATCH_ADS_URL: ${{ vars.WATCH_ADS_URL }}
         run: |
           echo "Building APK with build number: $VERSION_CODE"
           log=$(mktemp)

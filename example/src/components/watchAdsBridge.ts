@@ -1,7 +1,4 @@
-import safariManifest from '../../../safari-extension/manifest.json';
-
-export const WATCH_ADS_URL =
-  safariManifest.content_scripts[0].matches[0].replace(/\/\*$/, '');
+export const WATCH_ADS_URL = process.env.WATCH_ADS_URL ?? '';
 
 const MESSAGE_TYPE = 'kashir:ad-lnurl';
 

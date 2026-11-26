@@ -1,5 +1,13 @@
 # Kashir Safari extension
 
+Set the ad site in a `.env` file at the repository root before starting Metro or building Kashir.
+
+```dotenv
+WATCH_ADS_URL=https://your-ad-site.example
+```
+
+Use an HTTPS origin. Restart Metro and rebuild the iOS app after changing it. An unset value hides the Watch Ads tab and gives the Safari extension no site to run on. For CI builds, set `WATCH_ADS_URL` as an Xcode Cloud environment variable or a GitHub Actions repository variable.
+
 The Kashir wallet app bundles the Safari extension on iOS. Install the wallet app on your connected iPhone from the `example` directory.
 
 ```sh

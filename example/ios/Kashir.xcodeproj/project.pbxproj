@@ -17,7 +17,6 @@
 		2321A2203C7A833A5BB89AA6 /* Kashir Extension.appex in Embed Foundation Extensions */ = {isa = PBXBuildFile; fileRef = 0AE277B930B7471200E66A70 /* Kashir Extension.appex */; settings = {ATTRIBUTES = (CodeSignOnCopy, RemoveHeadersOnCopy, ); }; };
 		6F4A8DCAB6022401112C1F48 /* watch-ads.js in Resources */ = {isa = PBXBuildFile; fileRef = 5732A45195104D2CF4BFF57D /* watch-ads.js */; };
 		A4554CA6A838AB6D054A3944 /* SafariWebExtensionHandler.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7A0C92122345CBAADDC9FAA4 /* SafariWebExtensionHandler.swift */; };
-		AEF36203F36178BA87096731 /* manifest.json in Resources */ = {isa = PBXBuildFile; fileRef = E8424B0C8C6790CBEE1F606C /* manifest.json */; };
 		D79303F61E793AEB793AAB65 /* icon-512.png in Resources */ = {isa = PBXBuildFile; fileRef = 6C2D4B20A7CBB3EB2B631025 /* icon-512.png */; };
 		ED5ED9EB0874243C9806260F /* SafariReward in Frameworks */ = {isa = PBXBuildFile; productRef = 3ED414C3AC4FECCA605688B6 /* SafariReward */; };
 		0AE1618E0CE44BBEABA222A5 /* WatchAdsScreenAwake.m in Sources */ = {isa = PBXBuildFile; fileRef = 3F642107BA944AFCAEB395B7 /* WatchAdsScreenAwake.m */; };
@@ -179,6 +178,7 @@
 				1B91890C4B67E8A32CE820BD /* Sources */,
 				8292283E6F09D8320C35DAC3 /* Frameworks */,
 				59764C0F85C3FEFB79135591 /* Resources */,
+				20A53C8CEB3D452B9A6F9A93 /* Generate Safari Manifest */,
 			);
 			buildRules = (
 			);
@@ -273,7 +273,6 @@
 			files = (
 				1122D006AA723BE134CDAF79 /* background.js in Resources */,
 				D79303F61E793AEB793AAB65 /* icon-512.png in Resources */,
-				AEF36203F36178BA87096731 /* manifest.json in Resources */,
 				6F4A8DCAB6022401112C1F48 /* watch-ads.js in Resources */,
 			);
 		};
@@ -351,6 +350,20 @@
 			shellPath = /bin/sh;
 			shellScript = "\"${PODS_ROOT}/Target Support Files/Pods-Kashir/Pods-Kashir-resources.sh\"\n";
 			showEnvVarsInLog = 0;
+		};
+		20A53C8CEB3D452B9A6F9A93 /* Generate Safari Manifest */ = {
+			isa = PBXShellScriptBuildPhase;
+			alwaysOutOfDate = 1;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			name = "Generate Safari Manifest";
+			outputPaths = (
+				"$(TARGET_BUILD_DIR)/$(UNLOCALIZED_RESOURCES_FOLDER_PATH)/manifest.json",
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+			shellPath = /bin/sh;
+			shellScript = "set -e\n. \"$SRCROOT/.xcode.env\"\nif [ -f \"$SRCROOT/.xcode.env.local\" ]; then\n  . \"$SRCROOT/.xcode.env.local\"\nfi\n\"$NODE_BINARY\" \"$SRCROOT/../../scripts/watch-ads-config.cjs\" \"$SCRIPT_OUTPUT_FILE_0\"\n";
 		};
 /* End PBXShellScriptBuildPhase section */
 

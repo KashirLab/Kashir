@@ -12,6 +12,7 @@ import type { MainTabType } from './components/BottomTabNavigation';
 import { SettingsScreen } from './components/SettingsScreen';
 import { WalletScreen } from './components/WalletScreen';
 import { WatchAdsScreen } from './components/WatchAdsScreen';
+import { WATCH_ADS_URL } from './components/watchAdsBridge';
 import { resumePendingAdWithdrawals } from './services/AdWithdrawalService';
 import { walletManager } from './services/WalletManager';
 import { resetWalletStorage } from './services/WalletStorage';
@@ -21,8 +22,9 @@ export default function App() {
   const [hasWallet, setHasWallet] = useState(() => walletManager.hasWallet());
   const [isResetting, setIsResetting] = useState(false);
   const [resetCount, setResetCount] = useState(0);
+  const showWatchAds = Boolean(WATCH_ADS_URL) && hasWallet;
   const activeTab =
-    selectedTab === 'watchAds' && !hasWallet ? 'wallet' : selectedTab;
+    selectedTab === 'watchAds' && !showWatchAds ? 'wallet' : selectedTab;
   const settingsVisible = activeTab === 'settings';
 
   useEffect(() => {
@@ -30,7 +32,7 @@ export default function App() {
       const ready = walletManager.hasWallet();
       setHasWallet(ready);
       if (ready) {
-        resumePendingAdWithdrawals();
+        if (WATCH_ADS_URL) resumePendingAdWithdrawals();
       } else {
         setSelectedTab((tab) => (tab === 'watchAds' ? 'wallet' : tab));
       }
@@ -77,7 +79,7 @@ export default function App() {
       </View>
       <BottomTabNavigation
         activeTab={activeTab}
-        showWatchAds={hasWallet}
+        showWatchAds={showWatchAds}
         onTabChange={setSelectedTab}
       />
       {isResetting && (

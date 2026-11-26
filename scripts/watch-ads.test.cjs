@@ -8,8 +8,12 @@ const vm = require('node:vm');
 const ts = require('typescript');
 
 const root = path.resolve(__dirname, '..');
-const bridge = loadTs('example/src/components/watchAdsBridge.ts');
-const ORIGIN = bridge.WATCH_ADS_URL;
+const ORIGIN = 'https://ads.example';
+const bridge = loadTs(
+  'example/src/components/watchAdsBridge.ts',
+  {},
+  { process: { env: { WATCH_ADS_URL: ORIGIN } } }
+);
 const endpoint = `${ORIGIN}/api/payout/reward/lnurl?k1=offer-secret`;
 const { bech32 } = require('../example/node_modules/bech32');
 const encodeLnurl = (url, prefix = 'lnurl') =>
