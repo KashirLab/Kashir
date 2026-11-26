@@ -201,7 +201,7 @@ jobs:
         shell: bash
         env:
           VERSION_CODE: ${{ github.run_number }}
-          WATCH_ADS_URL: ${{ vars.WATCH_ADS_URL }}
+          WATCH_ADS_URL: ${{ secrets.WATCH_ADS_URL }}
           KASHIR_ANDROID_KEYSTORE_BASE64: ${{ secrets.KASHIR_ANDROID_KEYSTORE_BASE64 }}
           KASHIR_ANDROID_KEYSTORE_PASSWORD: ${{ secrets.KASHIR_ANDROID_KEYSTORE_PASSWORD }}
           KASHIR_ANDROID_KEY_PASSWORD: ${{ secrets.KASHIR_ANDROID_KEY_PASSWORD }}
