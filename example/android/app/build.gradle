@@ -84,8 +84,7 @@ android {
     namespace "com.kashir.android"
     defaultConfig {
         applicationId "com.kashir.android"
-        // APK Signature Scheme v3 is required for production-only key rotation.
-        minSdkVersion (System.getenv("KASHIR_ANDROID_ROTATED_SIGNING") == "true" ? 28 : rootProject.ext.minSdkVersion)
+        minSdkVersion rootProject.ext.minSdkVersion
         targetSdkVersion rootProject.ext.targetSdkVersion
         versionCode Integer.parseInt(System.getenv("VERSION_CODE") ?: "2")
         versionName "0.1.0"

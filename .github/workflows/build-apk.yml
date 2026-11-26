@@ -205,7 +205,6 @@ jobs:
           KASHIR_ANDROID_KEYSTORE_BASE64: ${{ secrets.KASHIR_ANDROID_KEYSTORE_BASE64 }}
           KASHIR_ANDROID_KEYSTORE_PASSWORD: ${{ secrets.KASHIR_ANDROID_KEYSTORE_PASSWORD }}
           KASHIR_ANDROID_KEY_PASSWORD: ${{ secrets.KASHIR_ANDROID_KEY_PASSWORD }}
-          KASHIR_ANDROID_SIGNING_LINEAGE_BASE64: ${{ vars.KASHIR_ANDROID_SIGNING_LINEAGE_BASE64 }}
         run: |
           if [[ -z "$KASHIR_ANDROID_KEYSTORE_BASE64" || -z "$KASHIR_ANDROID_KEYSTORE_PASSWORD" ]]; then
             echo "::error::Set KASHIR_ANDROID_KEYSTORE_BASE64 and KASHIR_ANDROID_KEYSTORE_PASSWORD in GitHub Actions secrets."
@@ -216,16 +215,10 @@ jobs:
           signing_dir=$(mktemp -d "$RUNNER_TEMP/kashir-signing.XXXXXX")
           trap 'rm -rf "$signing_dir"' EXIT
           keystore="$signing_dir/release.keystore"
-          lineage="$signing_dir/signing.lineage"
           log="$signing_dir/build.log"
           printf '%s' "$KASHIR_ANDROID_KEYSTORE_BASE64" | base64 --decode > "$keystore"
           unset KASHIR_ANDROID_KEYSTORE_BASE64
           export KASHIR_ANDROID_KEYSTORE_PATH="$keystore"
-
-          if [[ -n "$KASHIR_ANDROID_SIGNING_LINEAGE_BASE64" ]]; then
-            printf '%s' "$KASHIR_ANDROID_SIGNING_LINEAGE_BASE64" | base64 --decode > "$lineage"
-            export KASHIR_ANDROID_ROTATED_SIGNING=true
-          fi
 
           echo "Building APK with build number: $VERSION_CODE"
           args=(app:assembleRelease --no-daemon --console=plain --stacktrace)
@@ -242,27 +235,6 @@ jobs:
               args+=(--refresh-dependencies)
             fi
           done
-
-          if [[ -f "$lineage" ]]; then
-            apksigner="$ANDROID_HOME/build-tools/37.0.0/apksigner"
-            apk="app/build/outputs/apk/release/app-release.apk"
-            rotated_apk="$signing_dir/app-release.apk"
-            export KASHIR_ANDROID_KEY_PASSWORD="${KASHIR_ANDROID_KEY_PASSWORD:-$KASHIR_ANDROID_KEYSTORE_PASSWORD}"
-
-            "$apksigner" sign \
-              --ks "$keystore" --ks-key-alias release-key \
-              --ks-pass env:KASHIR_ANDROID_KEYSTORE_PASSWORD \
-              --key-pass env:KASHIR_ANDROID_KEY_PASSWORD \
-              --lineage "$lineage" --rotation-min-sdk-version 28 \
-              --v1-signing-enabled false --v2-signing-enabled false \
-              --v3-signing-enabled true --v4-signing-enabled false \
-              --out "$rotated_apk" "$apk"
-            "$apksigner" verify --verbose "$rotated_apk"
-            "$apksigner" lineage --in "$lineage" --print-certs | grep 'certificate SHA-256 digest:' > "$signing_dir/expected-certificates"
-            "$apksigner" lineage --in "$rotated_apk" --print-certs | grep 'certificate SHA-256 digest:' > "$signing_dir/apk-certificates"
-            diff -u "$signing_dir/expected-certificates" "$signing_dir/apk-certificates"
-            mv "$rotated_apk" "$apk"
-          fi
 
       - name: Generate tag name from version
         run: |
