@@ -11,19 +11,42 @@
 
   let screenLock;
   let requestingScreenLock = false;
+  let screenLockRetry;
+  let retriedScreenLock = false;
 
   async function keepScreenAwake() {
-    if (document.visibilityState !== 'visible' || !navigator.wakeLock) return;
+    if (document.visibilityState !== 'visible') return;
     if (requestingScreenLock || (screenLock && !screenLock.released)) return;
 
     requestingScreenLock = true;
     try {
-      screenLock = await navigator.wakeLock.request('screen');
+      const lock = await navigator.wakeLock?.request('screen');
+      if (!lock) return;
+      screenLock = lock;
+      lock.addEventListener(
+        'release',
+        () => {
+          if (screenLock !== lock) return;
+          screenLock = undefined;
+          if (document.visibilityState !== 'visible' || retriedScreenLock) {
+            return;
+          }
+          retriedScreenLock = true;
+          screenLockRetry = setTimeout(keepScreenAwake, 1000);
+        },
+        { once: true }
+      );
     } catch {
       // Safari can deny wake locks based on device or page state.
     } finally {
       requestingScreenLock = false;
     }
+  }
+
+  function refreshScreenLock() {
+    clearTimeout(screenLockRetry);
+    retriedScreenLock = false;
+    keepScreenAwake();
   }
 
   function selectLnurlTab() {
@@ -173,11 +196,11 @@
     attributes: true,
     attributeFilter: ['disabled', 'aria-disabled', 'hidden', 'class', 'style'],
   });
-  document.addEventListener('visibilitychange', keepScreenAwake);
-  window.addEventListener('pageshow', keepScreenAwake);
-  keepScreenAwake();
   document.addEventListener('visibilitychange', updatePage);
   document.addEventListener('loadeddata', scrollDisplayedAd, true);
   window.addEventListener('focus', updatePage);
   updatePage();
+  document.addEventListener('visibilitychange', refreshScreenLock);
+  window.addEventListener('pageshow', refreshScreenLock);
+  keepScreenAwake();
 })();
