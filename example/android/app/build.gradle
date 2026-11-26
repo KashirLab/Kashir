@@ -72,6 +72,10 @@ def enableProguardInReleaseBuilds = false
  */
 def jscFlavor = 'io.github.react-native-community:jsc-android:2026004.+'
 
+def releaseKeystore = file(System.getenv("KASHIR_ANDROID_KEYSTORE_PATH") ?: "release.keystore")
+def releaseStorePassword = System.getenv("KASHIR_ANDROID_KEYSTORE_PASSWORD")
+def releaseKeyPassword = System.getenv("KASHIR_ANDROID_KEY_PASSWORD") ?: releaseStorePassword
+
 android {
     ndkVersion rootProject.ext.ndkVersion
     buildToolsVersion rootProject.ext.buildToolsVersion
@@ -93,10 +97,10 @@ android {
             keyPassword 'android'
         }
         release {
-            storeFile file('release.keystore')
-            storePassword 'android'
+            storeFile releaseKeystore
+            storePassword releaseStorePassword
             keyAlias 'release-key'
-            keyPassword 'android'
+            keyPassword releaseKeyPassword
         }
     }
     buildTypes {
@@ -104,10 +108,7 @@ android {
             signingConfig signingConfigs.debug
         }
         release {
-            // Caution! In production, you need to generate your own keystore file.
-            // see https://reactnative.dev/docs/signed-apk-android.
-            // Use debug signing for CI, release signing for local builds
-            signingConfig file('release.keystore').exists() ? signingConfigs.release : signingConfigs.debug
+            signingConfig signingConfigs.release
             minifyEnabled enableProguardInReleaseBuilds
             proguardFiles getDefaultProguardFile("proguard-android-optimize.txt"), "proguard-rules.pro"
         }
@@ -123,4 +124,19 @@ dependencies {
     } else {
         implementation jscFlavor
     }
+}
+
+def validateKashirReleaseSigning = tasks.register("validateKashirReleaseSigning") {
+    doLast {
+        if (!releaseKeystore.isFile()) {
+            throw new GradleException("Release keystore is missing. Use app/release.keystore or set KASHIR_ANDROID_KEYSTORE_PATH.")
+        }
+        if (!releaseStorePassword) {
+            throw new GradleException("Set KASHIR_ANDROID_KEYSTORE_PASSWORD to build a signed release.")
+        }
+    }
+}
+
+tasks.matching { it.name == "preReleaseBuild" }.configureEach {
+    dependsOn(validateKashirReleaseSigning)
 }

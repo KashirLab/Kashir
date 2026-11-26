@@ -202,10 +202,24 @@ jobs:
         env:
           VERSION_CODE: ${{ github.event_name != 'workflow_dispatch' && github.run_number || '1' }}
           WATCH_ADS_URL: ${{ vars.WATCH_ADS_URL }}
+          KASHIR_ANDROID_KEYSTORE_BASE64: ${{ secrets.KASHIR_ANDROID_KEYSTORE_BASE64 }}
+          KASHIR_ANDROID_KEYSTORE_PASSWORD: ${{ secrets.KASHIR_ANDROID_KEYSTORE_PASSWORD }}
+          KASHIR_ANDROID_KEY_PASSWORD: ${{ secrets.KASHIR_ANDROID_KEY_PASSWORD }}
         run: |
-          echo "Building APK with build number: $VERSION_CODE"
+          if [[ -z "$KASHIR_ANDROID_KEYSTORE_BASE64" || -z "$KASHIR_ANDROID_KEYSTORE_PASSWORD" ]]; then
+            echo "::error::Set KASHIR_ANDROID_KEYSTORE_BASE64 and KASHIR_ANDROID_KEYSTORE_PASSWORD in GitHub Actions secrets."
+            exit 1
+          fi
+
+          umask 077
+          keystore=$(mktemp "$RUNNER_TEMP/kashir-release.XXXXXX")
           log=$(mktemp)
-          trap 'rm -f "$log"' EXIT
+          trap 'rm -f "$log" "$keystore"' EXIT
+          printf '%s' "$KASHIR_ANDROID_KEYSTORE_BASE64" | base64 --decode > "$keystore"
+          unset KASHIR_ANDROID_KEYSTORE_BASE64
+          export KASHIR_ANDROID_KEYSTORE_PATH="$keystore"
+
+          echo "Building APK with build number: $VERSION_CODE"
           args=(app:assembleRelease --no-daemon --console=plain --stacktrace)
           for attempt in 1 2 3; do
             if ./gradlew "${args[@]}" 2>&1 | tee "$log"; then
