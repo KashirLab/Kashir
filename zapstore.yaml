@@ -1,5 +1,5 @@
 name: Kashir
-repository: https://github.com/KashirApp/Kashir
+repository: https://github.com/KashirLab/Kashir
 icon: logo.png
-remote_metadata:
+metadata_sources:
   - github
