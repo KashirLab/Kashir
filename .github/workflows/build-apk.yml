@@ -222,6 +222,10 @@ jobs:
 
           echo "Building APK with build number: $VERSION_CODE"
           args=(app:assembleRelease --no-daemon --console=plain --stacktrace)
+          if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
+            # Manual runs also build an AAB for Play Store upload
+            args+=(app:bundleRelease)
+          fi
           for attempt in 1 2 3; do
             if ./gradlew "${args[@]}" 2>&1 | tee "$log"; then
               break
@@ -293,6 +297,30 @@ jobs:
             exit 1
           fi
 
+      - name: Find and copy AAB
+        if: github.event_name == 'workflow_dispatch'
+        run: |
+          # Find the generated AAB (release bundle for Play Store)
+          AAB_PATH=$(find example/android/app/build/outputs/bundle/release -name "*.aab" | head -1)
+
+          if [ -z "$AAB_PATH" ]; then
+            echo "No release AAB found, looking in other locations"
+            AAB_PATH=$(find example/android/app/build/outputs/bundle -name "*.aab" | head -1)
+          fi
+
+          if [ -n "$AAB_PATH" ]; then
+            echo "Found AAB at: $AAB_PATH"
+            AAB_FILENAME="${APK_NAME}.aab"
+            echo "AAB filename will be: $AAB_FILENAME"
+            cp "$AAB_PATH" "$AAB_FILENAME"
+            echo "AAB copied to $AAB_FILENAME"
+            ls -la "$AAB_FILENAME"
+            echo "AAB_FILE=$AAB_FILENAME" >> $GITHUB_ENV
+          else
+            echo "Error: No AAB found!"
+            exit 1
+          fi
+
       - name: Verify APK exists before release
         run: |
           if [ -f "$APK_FILE" ]; then
@@ -300,6 +328,17 @@ jobs:
             ls -la "$APK_FILE"
           else
             echo "❌ APK file not found!"
+            exit 1
+          fi
+
+      - name: Verify AAB exists before release
+        if: github.event_name == 'workflow_dispatch'
+        run: |
+          if [ -f "$AAB_FILE" ]; then
+            echo "✅ AAB file exists and is ready for upload"
+            ls -la "$AAB_FILE"
+          else
+            echo "❌ AAB file not found!"
             exit 1
           fi
 
@@ -335,7 +374,7 @@ jobs:
         with:
           tag: ${{ env.TAG_NAME }}
           name: ${{ env.RELEASE_TITLE }}
-          artifacts: "${{ env.APK_FILE }}"
+          artifacts: "${{ github.event_name == 'workflow_dispatch' && format('{0},{1}', env.APK_FILE, env.AAB_FILE) || env.APK_FILE }}"
           makeLatest: true
           prerelease: ${{ github.event_name != 'workflow_dispatch' }}
           draft: ${{ github.event_name == 'workflow_dispatch' }}
