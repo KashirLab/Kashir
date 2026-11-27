@@ -41,7 +41,7 @@ export function SettingsScreen({
     removeMintUrl,
     updateTotalBalance,
     handleSwapBetweenMints,
-  } = useWallet();
+  } = useWallet({ initializeOnMount: false });
 
   useEffect(() => {
     if (isVisible) {

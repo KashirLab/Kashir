@@ -159,6 +159,12 @@ export class SecureStorageService {
     }
   }
 
+  static async getSharedActiveMint(): Promise<string | null> {
+    if (Platform.OS !== 'ios') return null;
+    const credentials = await Keychain.getGenericPassword(sharedMintOptions);
+    return credentials ? credentials.password : null;
+  }
+
   static async setSharedActiveMint(url: string): Promise<void> {
     if (Platform.OS !== 'ios') return;
     if (url) {

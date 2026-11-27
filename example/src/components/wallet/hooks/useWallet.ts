@@ -29,13 +29,17 @@ import {
 const MINT_URLS_STORAGE_KEY = '@cashu_mint_urls';
 const ACTIVE_MINT_URL_STORAGE_KEY = '@cashu_active_mint_url';
 
-export function useWallet() {
+const RECOVERY_PENDING_KEY = '@cashu_recovery_pending';
+
+export function useWallet({ initializeOnMount = true } = {}) {
   // Get wallet data from WalletManager
   const [managerState, setManagerState] = useState(walletManager.getState());
 
   // UI-only state (not shared across components)
   const [moduleStatus, setModuleStatus] = useState<string>('Loading...');
-  const [isInitializing, setIsInitializing] = useState(true);
+  const [isInitializing, setIsInitializing] = useState(initializeOnMount);
+  const [savedWalletNeedsRecovery, setSavedWalletNeedsRecovery] =
+    useState(false);
   const [showReceiveModal, setShowReceiveModal] = useState(false);
   const [receiveAmount, setReceiveAmount] = useState('');
   const [invoice, setInvoice] = useState('');
@@ -161,6 +165,7 @@ export function useWallet() {
 
   const clearMintUrlsFromStorage = async () => {
     try {
+      await AsyncStorage.removeItem(RECOVERY_PENDING_KEY);
       await AsyncStorage.removeItem(MINT_URLS_STORAGE_KEY);
       await AsyncStorage.removeItem(ACTIVE_MINT_URL_STORAGE_KEY);
       await SecureStorageService.setSharedActiveMint('');
@@ -1046,6 +1051,72 @@ export function useWallet() {
     setShowRecoverModal(true);
   };
 
+  const recoverWalletAtMints = async (recoveryMnemonic: string) => {
+    const recoveryMintUrls = walletManager.getMintUrls();
+    const activeMint = await loadActiveMintUrlFromStorage();
+    const firstMintUrl =
+      recoveryMintUrls.find((url) => url === activeMint) ?? recoveryMintUrls[0];
+    if (!firstMintUrl) {
+      throw new Error('Add a mint before recovering your wallet');
+    }
+
+    const wallet = await createMultiMintWallet(recoveryMnemonic);
+    for (const mintUrl of recoveryMintUrls) {
+      const mintWallet = await wallet.getOrCreateWallet(
+        MintUrl.new({ url: mintUrl }),
+        CurrencyUnit.Sat.new(),
+        undefined
+      );
+      await withWalletOperationLock(() => mintWallet.restore());
+    }
+
+    if (!(await SecureStorageService.storeSeedPhrase(recoveryMnemonic))) {
+      throw new Error('Could not save the recovery phrase to secure storage');
+    }
+
+    walletManager.setActiveMintUrl(firstMintUrl);
+    setCurrentMintUrlRef(firstMintUrl);
+    await saveActiveMintUrlToStorage(firstMintUrl);
+    return wallet;
+  };
+
+  const recoverSavedWallet = async () => {
+    setIsInitializing(true);
+    setSavedWalletNeedsRecovery(true);
+    try {
+      const mnemonic = await SecureStorageService.getSeedPhrase();
+      if (!mnemonic) throw new Error('Saved recovery phrase is unavailable');
+
+      await loadMintUrlsFromStorage();
+      if (walletManager.getMintUrls().length === 0) {
+        const sharedMint = await SecureStorageService.getSharedActiveMint();
+        if (sharedMint) {
+          await AsyncStorage.setItem(
+            MINT_URLS_STORAGE_KEY,
+            JSON.stringify([sharedMint])
+          );
+          walletManager.setMintUrls([sharedMint]);
+        } else {
+          promptForMintUrl();
+          return;
+        }
+      }
+
+      // Opening the repository creates the database before proof recovery finishes.
+      await AsyncStorage.setItem(RECOVERY_PENDING_KEY, 'true');
+      const wallet = await recoverWalletAtMints(mnemonic);
+      await AsyncStorage.removeItem(RECOVERY_PENDING_KEY);
+      walletManager.setMultiMintWallet(wallet);
+      setSavedWalletNeedsRecovery(false);
+      setModuleStatus('Wallet Ready');
+    } catch (error) {
+      setModuleStatus('Recovery Failed');
+      Alert.alert('Error', `Recovery failed: ${getErrorMessage(error)}`);
+    } finally {
+      setIsInitializing(false);
+    }
+  };
+
   const handleWalletRecovery = async (recoveryMnemonic: string) => {
     try {
       if (!recoveryMnemonic || recoveryMnemonic.trim().length === 0) {
@@ -1055,29 +1126,7 @@ export function useWallet() {
       setShowRecoveryLoader(true);
 
       await loadMintUrlsFromStorage();
-      const recoveryMintUrls = walletManager.getMintUrls();
-      const firstMintUrl = recoveryMintUrls[0];
-      if (!firstMintUrl) {
-        throw new Error('Add a mint before recovering your wallet');
-      }
-
-      const wallet = await createMultiMintWallet(recoveryMnemonic);
-      for (const mintUrl of recoveryMintUrls) {
-        const mintWallet = await wallet.getOrCreateWallet(
-          MintUrl.new({ url: mintUrl }),
-          CurrencyUnit.Sat.new(),
-          undefined
-        );
-        await withWalletOperationLock(() => mintWallet.restore());
-      }
-
-      if (!(await SecureStorageService.storeSeedPhrase(recoveryMnemonic))) {
-        throw new Error('Could not save the recovery phrase to secure storage');
-      }
-
-      walletManager.setActiveMintUrl(firstMintUrl);
-      setCurrentMintUrlRef(firstMintUrl);
-      await saveActiveMintUrlToStorage(firstMintUrl);
+      const wallet = await recoverWalletAtMints(recoveryMnemonic);
       walletManager.setMultiMintWallet(wallet);
 
       setShowRecoveryLoader(false);
@@ -1124,7 +1173,9 @@ export function useWallet() {
       setShowMintUrlModal(false);
 
       // If this was triggered by wallet creation, create the wallet now
-      if (shouldCreateWalletAfterMint) {
+      if (savedWalletNeedsRecovery) {
+        await recoverSavedWallet();
+      } else if (shouldCreateWalletAfterMint) {
         setShouldCreateWalletAfterMint(false);
         await testWalletCreation();
       } else if (shouldShowRecoverAfterMint) {
@@ -1159,7 +1210,7 @@ export function useWallet() {
   useEffect(() => {
     const initializeWallet = async () => {
       // Prevent re-initialization
-      if (hasInitialized.current) {
+      if (!initializeOnMount || hasInitialized.current) {
         return;
       }
       hasInitialized.current = true;
@@ -1169,6 +1220,15 @@ export function useWallet() {
 
         // Check if we have an existing wallet
         const walletExists = await checkWalletExists();
+        const recoveryPending =
+          await AsyncStorage.getItem(RECOVERY_PENDING_KEY);
+        if (
+          (!walletExists || recoveryPending) &&
+          (await SecureStorageService.getSeedPhrase())
+        ) {
+          await recoverSavedWallet();
+          return;
+        }
         if (walletExists) {
           await restoreExistingWallet();
         }
@@ -1218,6 +1278,8 @@ export function useWallet() {
     activeMintUrl,
     isLoadingWallet,
     isInitializing,
+    savedWalletNeedsRecovery,
+    recoverSavedWallet,
 
     // UI state
     showReceiveModal,

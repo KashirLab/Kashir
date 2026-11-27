@@ -1,5 +1,11 @@
 import React from 'react';
-import { StyleSheet, View, Text, ActivityIndicator } from 'react-native';
+import {
+  StyleSheet,
+  View,
+  Text,
+  ActivityIndicator,
+  Button,
+} from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import ConfettiCannon from 'react-native-confetti-cannon';
 import {
@@ -49,6 +55,8 @@ export function WalletScreen() {
     wallet,
     isLoadingWallet,
     isInitializing,
+    savedWalletNeedsRecovery,
+    recoverSavedWallet,
     showReceiveModal,
     receiveAmount,
     invoice,
@@ -134,10 +142,18 @@ export function WalletScreen() {
         {isInitializing ? (
           <View style={styles.initializingContainer}>
             <ActivityIndicator size="large" color="#ffffff" />
-            <Text style={styles.initializingText}>Initializing Wallet...</Text>
+            <Text style={styles.initializingText}>
+              {savedWalletNeedsRecovery
+                ? 'Recovering Wallet…'
+                : 'Initializing Wallet…'}
+            </Text>
             <Text style={styles.initializingSubtext}>
               Please wait while we set up your wallet
             </Text>
+          </View>
+        ) : savedWalletNeedsRecovery ? (
+          <View style={styles.initializingContainer}>
+            <Button title="Recover Saved Wallet" onPress={recoverSavedWallet} />
           </View>
         ) : (
           <>
